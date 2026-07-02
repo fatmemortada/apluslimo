@@ -126,7 +126,7 @@ export function Sidebar() {
       <div className="flex h-16 items-center justify-between px-4 border-b border-white/8 shrink-0">
         <Link href="/" className="flex items-center gap-3 min-w-0 overflow-hidden">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold-500 text-neutral-900">
-            <span className="text-sm font-black">R</span>
+            <span className="text-sm font-black">C</span>
           </div>
           <AnimatePresence mode="wait">
             {!collapsed && (

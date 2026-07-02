@@ -11,9 +11,38 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ChauffeurOS — Luxury Fleet Management Platform",
+  title: {
+    default: "ChauffeurOS — Luxury Fleet Management Platform",
+    template: "%s | ChauffeurOS",
+  },
   description:
     "Enterprise-grade operating system for luxury limousine and chauffeur companies. Manage bookings, dispatch, fleet, CRM, and revenue in one platform.",
+  metadataBase: new URL("https://chauffeuros.ca"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_CA",
+    siteName: "ChauffeurOS",
+    title: "ChauffeurOS — Luxury Fleet Management Platform",
+    description:
+      "Enterprise-grade operating system for luxury limousine and chauffeur companies. Manage bookings, dispatch, fleet, CRM, and revenue in one platform.",
+    url: "https://chauffeuros.ca",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ChauffeurOS — Luxury Fleet Management Platform",
+    description:
+      "Enterprise-grade operating system for luxury limousine and chauffeur companies. Manage bookings, dispatch, fleet, CRM, and revenue in one platform.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

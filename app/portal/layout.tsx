@@ -28,8 +28,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         <div className="flex items-center gap-3">
           <button className="lg:hidden" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
           <Link href="/portal" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-500 text-neutral-900"><span className="text-sm font-black">R</span></div>
-            <span className="text-base font-bold tracking-tight">Royal<span className="text-gold-500">OS</span></span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-500 text-neutral-900"><span className="text-sm font-black">C</span></div>
+            <span className="text-base font-bold tracking-tight">Chauffeur<span className="text-gold-500">OS</span></span>
           </Link>
         </div>
         <div className="flex items-center gap-2">
@@ -61,7 +61,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           </div>
         </aside>
         {mobileOpen && <div className="fixed inset-0 bg-black/20 z-10 lg:hidden" onClick={() => setMobileOpen(false)} />}
-        <main className="flex-1 p-6 lg:p-8 min-h-[calc(100vh-64px)]">{children}</main>
+        <main className="flex-1 p-6 lg:p-8 min-h-[calc(100vh-64px)]">
+          {children}
+          <footer className="mt-8 border-t border-neutral-100 pt-4 text-center text-xs text-neutral-400">
+            <p>&copy; {new Date().getFullYear()} ChauffeurOS. All rights reserved. Built for luxury fleet operators.</p>
+          </footer>
+        </main>
       </div>
     </div>
   );

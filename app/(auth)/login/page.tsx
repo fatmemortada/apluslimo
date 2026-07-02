@@ -43,7 +43,7 @@ export default function LoginPage() {
       {/* Brand */}
       <div className="mb-10 text-center">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-500/20 ring-1 ring-gold-500/30">
-          <span className="text-2xl font-black text-gold-500">R</span>
+          <span className="text-2xl font-black text-gold-500">C</span>
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-white">
           Welcome to Chauffeur<span className="text-gold-500">OS</span>
