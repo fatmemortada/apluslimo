@@ -1,5 +1,5 @@
 // ============================================================
-// RoyalOS — Pricing Engine
+// ChauffeurOS — Pricing Engine
 // Modular calculation system for limousine booking fares
 // Swap real distance/time APIs and rate cards in production
 // ============================================================

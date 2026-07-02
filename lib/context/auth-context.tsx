@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
-    const saved = localStorage.getItem("royalos_session");
+    const saved = localStorage.getItem("chauffeuross_session");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token: json.data.token,
       };
 
-      localStorage.setItem("royalos_session", JSON.stringify(session));
+      localStorage.setItem("chauffeuross_session", JSON.stringify(session));
       setState({
         ...session,
         isAuthenticated: true,
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("royalos_session");
+    localStorage.removeItem("chauffeuross_session");
     setState({
       user: null,
       organization: null,

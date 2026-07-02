@@ -1,5 +1,5 @@
 // ============================================================
-// RoyalOS — Seed Data
+// ChauffeurOS — Seed Data
 // Complete interconnected dataset for development
 // ============================================================
 
@@ -481,7 +481,7 @@ export function seed(): void {
     { id: "notif_002", organizationId: ORG_ID, userId: "user_fatme", type: "payment", priority: "normal", title: "Payment Received", message: "$384.25 received from John Smith for INV-1042.", read: false, actionUrl: "/invoices", entityType: "invoice", entityId: "inv_001", createdAt: "2026-07-01T18:00:00Z" },
     { id: "notif_003", organizationId: ORG_ID, userId: "user_fatme", type: "driver", priority: "normal", title: "Trip Started", message: "David Chen started trip MRL-1042 with John Smith — en route to Downtown.", read: false, actionUrl: "/dispatch", entityType: "booking", entityId: "bkg_001", createdAt: "2026-07-02T09:05:00Z" },
     { id: "notif_004", organizationId: ORG_ID, userId: "user_fatme", type: "maintenance", priority: "high", title: "Maintenance In Progress", message: "Mercedes Sprinter ROY-003 brake replacement started at European Auto Care. Estimated cost: $1,250.", read: true, actionUrl: "/maintenance", entityType: "maintenance", entityId: "maint_002", createdAt: "2026-07-02T08:00:00Z" },
-    { id: "notif_005", organizationId: ORG_ID, userId: "user_fatme", type: "system", priority: "low", title: "System Update", message: "RoyalOS v1.2.0 is available with new reporting features. Update scheduled for this weekend.", read: true, createdAt: "2026-07-01T06:00:00Z" },
+    { id: "notif_005", organizationId: ORG_ID, userId: "user_fatme", type: "system", priority: "low", title: "System Update", message: "ChauffeurOS v1.2.0 is available with new reporting features. Update scheduled for this weekend.", read: true, createdAt: "2026-07-01T06:00:00Z" },
     { id: "notif_006", organizationId: ORG_ID, userId: "user_fatme", type: "alert", priority: "urgent", title: "License Expiring", message: "Alex Kim's Class 4B chauffeur license expires on Dec 20, 2026. Please ensure renewal documents are submitted.", read: true, actionUrl: "/drivers", entityType: "driver", entityId: drvId("alex"), createdAt: "2026-07-01T12:00:00Z" },
   ];
   notifications.forEach((n) => db.notifications.set(n.id, n));

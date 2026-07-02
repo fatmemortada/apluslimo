@@ -1,5 +1,5 @@
 // ============================================================
-// RoyalOS — Email Parsing Engine
+// ChauffeurOS — Email Parsing Engine
 // Extracts structured booking data from free-form email text
 // ============================================================
 

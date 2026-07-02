@@ -23,9 +23,9 @@ interface Quote {
   createdAt: string; updatedAt: string;
 }
 
-declare global { var __royalos_quotes: Map<string, Quote> | undefined; }
-const quoteStore: Map<string, Quote> = globalThis.__royalos_quotes ?? new Map();
-if (!globalThis.__royalos_quotes) globalThis.__royalos_quotes = quoteStore;
+declare global { var __chauffeuross_quotes: Map<string, Quote> | undefined; }
+const quoteStore: Map<string, Quote> = globalThis.__chauffeuross_quotes ?? new Map();
+if (!globalThis.__chauffeuross_quotes) globalThis.__chauffeuross_quotes = quoteStore;
 
 function generateQuoteNumber(): string { return `QTE-${Math.floor(Math.random() * 9000) + 1000}`; }
 

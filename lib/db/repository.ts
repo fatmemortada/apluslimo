@@ -1,5 +1,5 @@
 // ============================================================
-// RoyalOS — Base Repository Class
+// ChauffeurOS — Base Repository Class
 // Generic CRUD operations on the normalized store
 // ============================================================
 

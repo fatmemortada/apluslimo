@@ -1,5 +1,5 @@
 // ============================================================
-// RoyalOS — Enterprise Limousine SaaS Type System
+// ChauffeurOS — Enterprise Limousine SaaS Type System
 // Multi-tenant architecture with normalized relationships
 // ============================================================
 

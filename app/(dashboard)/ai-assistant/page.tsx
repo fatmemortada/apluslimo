@@ -50,7 +50,7 @@ function generateResponse(prompt: string): string {
 }
 
 export default function AIAssistantPage() {
-  const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: "Hello! I'm your RoyalOS AI Operations Assistant. I can analyze your fleet operations, generate insights, help with bookings, and answer questions about your business.\n\n**Try asking me:**\n• \"Show today's revenue\"\n• \"Which drivers are available?\"\n• \"Vehicles due for maintenance\"\n• \"Top customers this month\"", time: "Now", type: "text" }]);
+  const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: "Hello! I'm your ChauffeurOS AI Operations Assistant. I can analyze your fleet operations, generate insights, help with bookings, and answer questions about your business.\n\n**Try asking me:**\n• \"Show today's revenue\"\n• \"Which drivers are available?\"\n• \"Vehicles due for maintenance\"\n• \"Top customers this month\"", time: "Now", type: "text" }]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);

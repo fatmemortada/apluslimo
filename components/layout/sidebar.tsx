@@ -136,7 +136,7 @@ export function Sidebar() {
                 exit={{ opacity: 0, x: -8 }}
                 className="text-base font-bold tracking-tight whitespace-nowrap"
               >
-                Royal<span className="text-gold-500">OS</span>
+                Chauffeur<span className="text-gold-500">OS</span>
               </motion.span>
             )}
           </AnimatePresence>

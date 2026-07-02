@@ -46,7 +46,7 @@ export default function LoginPage() {
           <span className="text-2xl font-black text-gold-500">R</span>
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-white">
-          Welcome to Royal<span className="text-gold-500">OS</span>
+          Welcome to Chauffeur<span className="text-gold-500">OS</span>
         </h1>
         <p className="mt-2 text-sm text-white/50">
           Sign in to your luxury fleet command center
@@ -74,7 +74,7 @@ export default function LoginPage() {
               <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30 pointer-events-none" />
               <input
                 type="email"
-                placeholder="admin@royalos.com"
+                placeholder="admin@chauffeuross.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-white/30 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gold-500/30 focus:border-gold-500"

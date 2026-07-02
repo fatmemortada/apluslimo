@@ -1,5 +1,5 @@
 // ============================================================
-// RoyalOS — API Route Helpers
+// ChauffeurOS — API Route Helpers
 // Standardized request handling, error responses, org context
 // ============================================================
 

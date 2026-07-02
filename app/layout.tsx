@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "RoyalOS — Luxury Fleet Management Platform",
+  title: "ChauffeurOS — Luxury Fleet Management Platform",
   description:
     "Enterprise-grade operating system for luxury limousine and chauffeur companies. Manage bookings, dispatch, fleet, CRM, and revenue in one platform.",
 };

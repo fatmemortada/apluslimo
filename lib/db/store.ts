@@ -1,5 +1,5 @@
 // ============================================================
-// RoyalOS — Normalized In-Memory Data Store
+// ChauffeurOS — Normalized In-Memory Data Store
 // Drop-in replacement target for PostgreSQL/Prisma
 // ============================================================
 
@@ -66,7 +66,7 @@ function createStore(): DatabaseSchema {
 // Global store instance (server-side singleton in dev)
 declare global {
   // eslint-disable-next-line no-var
-  var __royalos_db: DatabaseSchema | undefined;
+  var __chauffeuross_db: DatabaseSchema | undefined;
 }
 
 // Ensure the global store has all fields (backward-compatible with HMR)
@@ -81,12 +81,12 @@ function ensureStoreComplete(store: DatabaseSchema): DatabaseSchema {
 }
 
 export const db: DatabaseSchema = ensureStoreComplete(
-  globalThis.__royalos_db ?? createStore()
+  globalThis.__chauffeuross_db ?? createStore()
 );
 
 // Persist across HMR in development
 if (process.env.NODE_ENV !== "production") {
-  globalThis.__royalos_db = db;
+  globalThis.__chauffeuross_db = db;
 }
 
 // ── Helper: Generate IDs ────────────────────────────────────
