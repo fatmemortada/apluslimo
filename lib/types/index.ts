@@ -528,7 +528,7 @@ export interface Notification {
 // ── Email / Inbox Types ─────────────────────────────────────
 
 export type InboxProvider = "gmail" | "outlook" | "smtp" | "mock";
-export type InboxSyncStatus = "connected" | "disconnected" | "error" | "connecting";
+export type InboxSyncStatus = "connected" | "disconnected" | "error" | "connecting" | "demo" | "needs_reauthorization";
 
 export type EmailMessageStatus =
   | "unread"
