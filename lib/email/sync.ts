@@ -121,7 +121,173 @@ export async function syncInbox(inboxId: string): Promise<SyncResult> {
   };
 }
 
-// ── OAuth-based sync (Gmail, Outlook) ────────────────────────
+// ── Real Gmail API fetch ─────────────────────────────────────
+
+interface GmailHeader {
+  name: string;
+  value: string;
+}
+
+interface GmailPart {
+  mimeType: string;
+  filename: string;
+  headers?: GmailHeader[];
+  body: { data?: string; attachmentId?: string; size: number };
+  parts?: GmailPart[];
+}
+
+interface GmailMessage {
+  id: string;
+  threadId: string;
+  labelIds: string[];
+  payload: GmailPart;
+  internalDate: string;
+}
+
+function base64Decode(data: string): string {
+  try {
+    return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8");
+  } catch {
+    return "";
+  }
+}
+
+function findHeader(headers: GmailHeader[], name: string): string {
+  return headers?.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value || "";
+}
+
+function extractTextParts(part: GmailPart, targetMime: string): string[] {
+  const results: string[] = [];
+  if (part.mimeType === targetMime && part.body?.data) {
+    results.push(base64Decode(part.body.data));
+  }
+  if (part.parts) {
+    for (const p of part.parts) {
+      results.push(...extractTextParts(p, targetMime));
+    }
+  }
+  return results;
+}
+
+function extractAttachments(part: GmailPart): import("./provider").FetchedEmail["attachments"] {
+  const results: import("./provider").FetchedEmail["attachments"] = [];
+  if (part.filename && part.filename.length > 0 && part.body?.attachmentId) {
+    results.push({
+      filename: part.filename,
+      mimeType: part.mimeType,
+      size: part.body.size || 0,
+    });
+  }
+  if (part.parts) {
+    for (const p of part.parts) {
+      results.push(...extractAttachments(p));
+    }
+  }
+  return results;
+}
+
+function parseGmailMessage(msg: GmailMessage): import("./provider").FetchedEmail | null {
+  const headers = msg.payload?.headers || [];
+  const subject = findHeader(headers, "Subject");
+  const fromRaw = findHeader(headers, "From");
+  const toRaw = findHeader(headers, "To");
+  const ccRaw = findHeader(headers, "Cc");
+  const dateRaw = findHeader(headers, "Date");
+
+  if (!subject && !fromRaw) return null;
+
+  function parseAddress(raw: string): { name: string; email: string } {
+    const match = raw.match(/^"?([^"<]*)"?\s*<([^>]+)>/);
+    if (match) return { name: match[1].trim() || match[2], email: match[2] };
+    return { name: raw.trim(), email: raw.trim() };
+  }
+
+  function parseAddressList(raw: string): Array<{ name: string; email: string }> {
+    if (!raw) return [];
+    const parts: string[] = [];
+    let current = "";
+    let inQuote = false;
+    for (const ch of raw) {
+      if (ch === '"') inQuote = !inQuote;
+      if (ch === "," && !inQuote) { parts.push(current.trim()); current = ""; }
+      else current += ch;
+    }
+    if (current.trim()) parts.push(current.trim());
+    return parts.map(parseAddress);
+  }
+
+  let body = "";
+  const plainParts = extractTextParts(msg.payload, "text/plain");
+  const htmlParts = extractTextParts(msg.payload, "text/html");
+  body = plainParts.join("\n\n") || htmlParts.join("\n\n") || "";
+  if (!body && msg.payload?.body?.data) {
+    body = base64Decode(msg.payload.body.data);
+  }
+
+  const bodyPreview = body
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .slice(0, 150)
+    .trim();
+
+  const receivedAt = dateRaw
+    ? new Date(dateRaw).toISOString()
+    : new Date(parseInt(msg.internalDate)).toISOString();
+
+  return {
+    externalId: msg.id,
+    subject: subject || "(no subject)",
+    from: parseAddress(fromRaw),
+    to: parseAddressList(toRaw),
+    cc: parseAddressList(ccRaw),
+    body: body || "(no readable content)",
+    bodyPreview: bodyPreview || subject || "",
+    receivedAt,
+    labels: (msg.labelIds || []).filter((l) => !["INBOX", "UNREAD", "SENT", "DRAFT", "CATEGORY_PRIMARY"].includes(l)).map((l) => l.toLowerCase()),
+    attachments: extractAttachments(msg.payload),
+    threadId: msg.threadId,
+  };
+}
+
+async function fetchGmailEmails(
+  accessToken: string,
+  inboxEmail: string,
+  since: Date,
+  maxResults: number = 20
+): Promise<import("./provider").FetchedEmail[]> {
+  const sinceSeconds = Math.floor(since.getTime() / 1000);
+  const query = `after:${sinceSeconds}`;
+
+  const listRes = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=${maxResults}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!listRes.ok) {
+    const errText = await listRes.text();
+    throw new Error(`Gmail API list failed (${listRes.status}): ${errText}`);
+  }
+
+  const listData = await listRes.json();
+  const messageIds: string[] = (listData.messages || []).map((m: { id: string }) => m.id);
+  if (messageIds.length === 0) return [];
+
+  const results: import("./provider").FetchedEmail[] = [];
+  for (const msgId of messageIds) {
+    const msgRes = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msgId}?format=full`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    if (!msgRes.ok) continue;
+    const msgData: GmailMessage = await msgRes.json();
+    const parsed = parseGmailMessage(msgData);
+    if (parsed) results.push(parsed);
+  }
+
+  return results;
+}
+
+// ── Updated OAuth sync (routes to real provider APIs) ───────
 
 async function syncOAuth(inbox: EmailInbox): Promise<SyncResult> {
   const errors: string[] = [];
@@ -146,7 +312,7 @@ async function syncOAuth(inbox: EmailInbox): Promise<SyncResult> {
       email: inbox.email,
       status: "no_credentials",
       newEmails: 0,
-      errors: [`${inbox.provider} API credentials not configured in environment variables`],
+      errors: [`${inbox.provider} API credentials not configured`],
     };
   }
 
@@ -162,28 +328,31 @@ async function syncOAuth(inbox: EmailInbox): Promise<SyncResult> {
     };
   }
 
-  // Fetch emails via provider API
   try {
     const since = inbox.lastSyncAt
       ? new Date(inbox.lastSyncAt)
-      : new Date(Date.now() - 24 * 60 * 60 * 1000); // last 24h if never synced
+      : new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // This would call the actual provider API
-    // For now, we simulate the fetch to validate the architecture
-    const fetched = await simulateProviderFetch(inbox, token, since);
+    let fetched: import("./provider").FetchedEmail[];
 
-    // Process and store fetched emails
+    if (inbox.provider === "gmail") {
+      fetched = await fetchGmailEmails(token.accessToken, inbox.email, since);
+    } else if (inbox.provider === "outlook") {
+      throw new Error("Microsoft Graph sync not yet implemented");
+    } else {
+      fetched = [];
+    }
+
     let newCount = 0;
     for (const fet of fetched) {
-      // Skip if already stored by external ID
       const exists = Array.from(db.emailMessages.values()).some(
-        (m) => m.threadId === fet.externalId
+        (m) => m.threadId === fet.externalId || m.threadId === (fet.threadId || "")
       );
       if (exists) continue;
 
       const parsed = parseEmail(fet.subject, fet.body, fet.from.name, fet.from.email);
       const email: EmailMessage = {
-        id: `email_sync_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+        id: `email_${fet.externalId}`,
         organizationId: inbox.organizationId,
         inboxId: inbox.id,
         subject: fet.subject,
@@ -197,13 +366,13 @@ async function syncOAuth(inbox: EmailInbox): Promise<SyncResult> {
         category: classifyEmail(fet.subject, fet.body, fet.labels),
         labels: fet.labels,
         attachments: fet.attachments.map((a) => ({
-          id: `att_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+          id: `att_${fet.externalId}_${a.filename.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30)}`,
           filename: a.filename,
           mimeType: a.mimeType,
           size: a.size,
           url: "#",
         })),
-        threadId: fet.externalId || fet.threadId || `thread_${Date.now().toString(36)}`,
+        threadId: fet.externalId,
         parsedData: parsed,
         receivedAt: fet.receivedAt,
         createdAt: new Date().toISOString(),
@@ -214,7 +383,6 @@ async function syncOAuth(inbox: EmailInbox): Promise<SyncResult> {
       newCount++;
     }
 
-    // Update inbox state
     inbox.lastSyncAt = new Date().toISOString();
     inbox.syncStatus = "connected";
     inbox.unreadCount += newCount;
@@ -238,7 +406,7 @@ async function syncOAuth(inbox: EmailInbox): Promise<SyncResult> {
   }
 }
 
-// ── IMAP-based sync ──────────────────────────────────────────
+// ── IMAP-based sync (fallback) ────────────────────────────────
 
 async function syncIMAP(inbox: EmailInbox): Promise<SyncResult> {
   return {
@@ -248,45 +416,6 @@ async function syncIMAP(inbox: EmailInbox): Promise<SyncResult> {
     newEmails: 0,
     errors: ["IMAP sync requires encrypted app password configuration"],
   };
-}
-
-// ── Simulated provider fetch (for when real API isn't configured) ──
-
-async function simulateProviderFetch(
-  inbox: EmailInbox,
-  token: OAuthToken,
-  since: Date
-): Promise<import("./provider").FetchedEmail[]> {
-  // In production, this would call Gmail API or Microsoft Graph API
-  // For now, generate realistic sample emails to validate the pipeline
-  const samples: import("./provider").FetchedEmail[] = [
-    {
-      externalId: `ext_${Date.now().toString(36)}_001`,
-      subject: `New booking inquiry — ${new Date().toLocaleDateString()}`,
-      from: { name: "James Wilson", email: "jwilson@example.com" },
-      to: [{ name: inbox.displayName, email: inbox.email }],
-      cc: [],
-      body: `Hi,\n\nI need a sedan transfer from YUL airport to downtown Montreal on ${new Date(Date.now() + 86400000).toLocaleDateString()}. Flight arrives at 14:30. 1 passenger.\n\nPlease provide a quote.\n\nBest,\nJames Wilson`,
-      bodyPreview: "I need a sedan transfer from YUL airport to downtown Montreal...",
-      receivedAt: new Date().toISOString(),
-      labels: ["booking_request", "airport"],
-      attachments: [],
-    },
-    {
-      externalId: `ext_${Date.now().toString(36)}_002`,
-      subject: "Re: Corporate account statement",
-      from: { name: "Sarah Chen", email: "sarah@techcorp.com" },
-      to: [{ name: inbox.displayName, email: inbox.email }],
-      cc: [{ name: "Accounts", email: "accounts@techcorp.com" }],
-      body: "Could you please send the monthly statement for June? We need it for reconciliation.\n\nThanks,\nSarah",
-      bodyPreview: "Could you please send the monthly statement for June?",
-      receivedAt: new Date(Date.now() - 3600000).toISOString(),
-      labels: ["corporate", "invoice"],
-      attachments: [],
-    },
-  ];
-
-  return samples;
 }
 
 // ── Sync all enabled inboxes ─────────────────────────────────
