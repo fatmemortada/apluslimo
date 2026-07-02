@@ -219,8 +219,13 @@ export default function AdminPanel() {
                           </div>
                           {isDemo && (
                             <Button variant="outline" size="sm" icon={<ExternalLink className="h-3.5 w-3.5" />} onClick={() => setShowConnectDialog(inbox.id)}>
-                              Connect Real Inbox
+                              Configure Connection
                             </Button>
+                          )}
+                          {inbox.oauthConnected && (
+                            <span className="text-[10px] text-success-600 font-semibold flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" /> OAuth Active
+                            </span>
                           )}
                         </div>
                       </div>
@@ -231,7 +236,7 @@ export default function AdminPanel() {
                           <AlertTriangle className="h-3.5 w-3.5 text-warning-600 shrink-0" />
                           <p className="text-[11px] text-warning-700">
                             This inbox contains <strong>sample demo data</strong>.
-                            Click "Connect Real Inbox" to configure OAuth and receive real emails.
+                            Configure OAuth to connect a real inbox and receive live emails.
                           </p>
                         </div>
                       )}
@@ -241,71 +246,86 @@ export default function AdminPanel() {
               )}
             </div>
 
-            {/* Connect Inbox Dialog */}
-            {showConnectDialog && (
-              <div className="mt-4 rounded-2xl border-2 border-brand-200 bg-brand-50/30 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-base font-bold text-neutral-800">Connect Real Inbox</h3>
-                    <p className="text-sm text-neutral-500">Choose a provider to connect. No plain-text passwords are ever stored.</p>
+            {/* OAuth Configuration Panel */}
+            {showConnectDialog && (() => {
+              const inbox = inboxes.find(i => i.id === showConnectDialog);
+              if (!inbox) return null;
+              return (
+                <div className="mt-4 rounded-2xl border-2 border-brand-200 bg-brand-50/30 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-neutral-800">Connect {inbox.displayName}</h3>
+                      <p className="text-sm text-neutral-500">{inbox.email} — Choose a provider to connect.</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setShowConnectDialog(null)} icon={<X className="h-4 w-4" />} />
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setShowConnectDialog(null)} icon={<X className="h-4 w-4" />} />
-                </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <button className="flex items-center gap-4 rounded-xl border-2 border-transparent bg-white p-5 hover:border-brand-300 hover:shadow-md transition-all text-left">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 font-bold text-lg">G</div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-neutral-800">Google Workspace</p>
-                      <p className="text-xs text-neutral-500 mt-0.5">Gmail API via OAuth 2.0</p>
-                      <ul className="mt-2 text-[10px] text-neutral-400 space-y-0.5">
-                        <li>✓ No password required</li>
-                        <li>✓ OAuth 2.0 secure tokens</li>
-                        <li>✓ Real-time push notifications</li>
-                      </ul>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
+                    <a href={`/api/auth/google?inboxId=${inbox.id}`}
+                      className="block rounded-xl border-2 border-transparent bg-white p-5 hover:border-brand-300 hover:shadow-md transition-all">
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 font-bold text-lg">G</div>
+                        <div>
+                          <p className="text-sm font-bold text-neutral-800">Google Workspace</p>
+                          <p className="text-xs text-neutral-500">Gmail API · OAuth 2.0</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-neutral-400">Requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in environment variables.</p>
+                    </a>
+
+                    <a href={`/api/auth/microsoft?inboxId=${inbox.id}`}
+                      className="block rounded-xl border-2 border-transparent bg-white p-5 hover:border-brand-300 hover:shadow-md transition-all">
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 font-bold text-lg">M</div>
+                        <div>
+                          <p className="text-sm font-bold text-neutral-800">Microsoft 365</p>
+                          <p className="text-xs text-neutral-500">Graph API · OAuth 2.0</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-neutral-400">Requires MICROSOFT_CLIENT_ID, CLIENT_SECRET, and TENANT_ID.</p>
+                    </a>
+
+                    <div className="rounded-xl border-2 border-neutral-200 bg-neutral-25 p-5 opacity-70">
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 font-bold text-lg">@</div>
+                        <div>
+                          <p className="text-sm font-bold text-neutral-800">IMAP/SMTP</p>
+                          <p className="text-xs text-neutral-500">Encrypted app password</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-neutral-400">Enter IMAP host, port, and app-specific password below.</p>
                     </div>
-                    <Badge variant="neutral">Setup</Badge>
-                  </button>
+                  </div>
 
-                  <button className="flex items-center gap-4 rounded-xl border-2 border-transparent bg-white p-5 hover:border-brand-300 hover:shadow-md transition-all text-left">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 font-bold text-lg">M</div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-neutral-800">Microsoft 365</p>
-                      <p className="text-xs text-neutral-500 mt-0.5">Graph API via OAuth 2.0</p>
-                      <ul className="mt-2 text-[10px] text-neutral-400 space-y-0.5">
-                        <li>✓ No password required</li>
-                        <li>✓ OAuth 2.0 secure tokens</li>
-                        <li>✓ Real-time webhook events</li>
-                      </ul>
+                  <div className="rounded-xl border border-neutral-200 bg-white p-5">
+                    <h4 className="text-xs font-bold text-neutral-500 uppercase mb-3">IMAP/SMTP Configuration</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className="block mb-1.5 text-sm font-semibold text-neutral-700">IMAP Host</label><input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder="imap.gmail.com" /></div>
+                      <div><label className="block mb-1.5 text-sm font-semibold text-neutral-700">Port</label><input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder="993" /></div>
+                      <div><label className="block mb-1.5 text-sm font-semibold text-neutral-700">Username</label><input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder={inbox.email} /></div>
+                      <div>
+                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">App Password</label>
+                        <input type="password" className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder="Encrypted app password only" />
+                        <p className="mt-1 text-[10px] text-neutral-400">Generate an app-specific password — never use your real password.</p>
+                      </div>
                     </div>
-                    <Badge variant="neutral">Setup</Badge>
-                  </button>
-
-                  <button className="flex items-center gap-4 rounded-xl border-2 border-transparent bg-white p-5 hover:border-brand-300 hover:shadow-md transition-all text-left">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 font-bold text-lg">@</div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-neutral-800">IMAP/SMTP</p>
-                      <p className="text-xs text-neutral-500 mt-0.5">Encrypted app password only</p>
-                      <ul className="mt-2 text-[10px] text-neutral-400 space-y-0.5">
-                        <li>✓ Encrypted app passwords only</li>
-                        <li>✓ No plain-text storage</li>
-                        <li>✓ Fallback for custom hosts</li>
-                      </ul>
+                    <div className="mt-3 flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-neutral-500" />
+                      <p className="text-[10px] text-neutral-500">AES-256 encrypted at rest.</p>
                     </div>
-                    <Badge variant="neutral">Setup</Badge>
-                  </button>
-                </div>
+                  </div>
 
-                <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-3 flex items-center gap-3">
-                  <ShieldCheck className="h-5 w-5 text-neutral-500 shrink-0" />
-                  <p className="text-xs text-neutral-500">
-                    <strong>Security:</strong> All OAuth tokens are encrypted at rest using AES-256.
-                    Refresh tokens rotate automatically. IMAP/SMTP only accepts encrypted app-specific passwords —
-                    your real email password is never requested or stored.
-                  </p>
+                  <div className="mt-4 rounded-lg border border-info-200 bg-info-50 p-3 flex items-center gap-3">
+                    <Shield className="h-5 w-5 text-info-600 shrink-0" />
+                    <p className="text-xs text-info-700">
+                      <strong>Note:</strong> Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CLIENT_ID,
+                      MICROSOFT_CLIENT_SECRET, and MICROSOFT_TENANT_ID as environment variables in your
+                      Vercel project dashboard before connecting.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Real Email Setup — Technical Note */}
             <div className="mt-6 rounded-xl border border-info-200 bg-info-50 p-4">
