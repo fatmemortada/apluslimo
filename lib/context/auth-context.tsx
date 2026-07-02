@@ -34,6 +34,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading: true,
   });
 
+  // Helper: set session cookie (for middleware auth check)
+function setSessionCookie(token: string) {
+  document.cookie = `chauffeuross_session=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+}
+
+function clearSessionCookie() {
+  document.cookie = "chauffeuross_session=; path=/; max-age=0; SameSite=Lax";
+}
+
   // Check for existing session on mount
   useEffect(() => {
     const saved = localStorage.getItem("chauffeuross_session");
@@ -45,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           isAuthenticated: true,
           isLoading: false,
         });
+        setSessionCookie(parsed.token || "authenticated");
         return;
       } catch { /* Invalid session */ }
     }
@@ -68,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       localStorage.setItem("chauffeuross_session", JSON.stringify(session));
+      setSessionCookie(session.token || "authenticated");
       setState({
         ...session,
         isAuthenticated: true,
@@ -81,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem("chauffeuross_session");
+    clearSessionCookie();
     setState({
       user: null,
       organization: null,

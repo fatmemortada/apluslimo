@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,18 +10,24 @@ import { useAuth } from "@/lib/context/auth-context";
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated } = useAuth();
-  const [email, setEmail] = useState("fatme@royallimo.com");
+  const [email, setEmail] = useState("fatme@chauffeuross.com");
   const [password, setPassword] = useState("password");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [remember, setRemember] = useState(false);
 
+  // Get redirect URL from query params
+  const redirectTo = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("redirect") || "/"
+    : "/";
+
   // Redirect if already authenticated
-  if (isAuthenticated) {
-    router.replace("/");
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace(redirectTo);
+    }
+  }, [isAuthenticated, redirectTo, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,9 +38,9 @@ export default function LoginPage() {
 
     setLoading(false);
     if (success) {
-      router.push("/");
+      router.push(redirectTo);
     } else {
-      setError("Invalid email or password. Try fatme@royallimo.com / password");
+      setError("Invalid email or password. Try fatme@chauffeuross.com / password");
     }
   }
 
@@ -140,7 +146,7 @@ export default function LoginPage() {
         </Button>
 
         <p className="mt-5 text-center text-xs text-white/30">
-          Demo: fatme@royallimo.com / password
+          Demo: fatme@chauffeuross.com / password
         </p>
       </form>
     </div>

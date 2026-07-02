@@ -275,6 +275,7 @@ export default function EmailCenter() {
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <p className="truncate text-xs font-semibold">{brand.name}</p>
+                  <p className="text-[8px] text-warning-500 font-semibold uppercase tracking-wider">Demo</p>
                 </div>
                 {inbox.unreadCount > 0 && <span className={["shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold", brand.badgeBg, brand.badgeText].join(" ")}>{inbox.unreadCount}</span>}
               </button>

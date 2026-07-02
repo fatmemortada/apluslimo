@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "ChauffeurOS — Luxury Fleet Management Platform",
+    default: "ChauffeurOS — Luxury Chauffeur Operations Platform",
     template: "%s | ChauffeurOS",
   },
   description:
@@ -25,14 +25,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_CA",
     siteName: "ChauffeurOS",
-    title: "ChauffeurOS — Luxury Fleet Management Platform",
+    title: "ChauffeurOS — Luxury Chauffeur Operations Platform",
     description:
       "Enterprise-grade operating system for luxury limousine and chauffeur companies. Manage bookings, dispatch, fleet, CRM, and revenue in one platform.",
     url: "https://chauffeuros.ca",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ChauffeurOS — Luxury Fleet Management Platform",
+    title: "ChauffeurOS — Luxury Chauffeur Operations Platform",
     description:
       "Enterprise-grade operating system for luxury limousine and chauffeur companies. Manage bookings, dispatch, fleet, CRM, and revenue in one platform.",
   },

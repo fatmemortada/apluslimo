@@ -98,7 +98,7 @@ export default function ChauffeurDashboard() {
       title: `Trip ${b.bookingNumber}`, description: `${b.pickup.address.city} → ${b.dropoff.address.city}`,
       timestamp: b.scheduledPickupAt, metadata: { revenue: fmt$(b.totalAmount), status: b.status, passenger: b.customerId },
     })),
-    ...(selected ? [{ id: "tl_hired", type: "hired" as DriverTimelineType, title: "Hired", description: `Joined Royal Limousine`, timestamp: selected.hiredAt }] : []),
+    ...(selected ? [{ id: "tl_hired", type: "hired" as DriverTimelineType, title: "Hired", description: `Joined ChauffeurOS Fleet`, timestamp: selected.hiredAt }] : []),
     ...(selected ? [{ id: "tl_lic", type: "license_renewed" as DriverTimelineType, title: "License on File", description: `${selected.licenseClass} — Expires ${new Date(selected.licenseExpiry).toLocaleDateString()}`, timestamp: selected.licenseExpiry, metadata: { license: selected.licenseNumber, class: selected.licenseClass } }] : []),
   ] : [];
 

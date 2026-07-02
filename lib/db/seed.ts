@@ -31,8 +31,8 @@ export function seed(): void {
   // ── Organization ──────────────────────────────────────
   const org: Organization = {
     id: ORG_ID,
-    name: "Royal Limousine Montreal",
-    slug: "royal-limousine-montreal",
+    name: "ChauffeurOS Fleet Operations",
+    slug: "chauffeuross-fleet-operations",
     taxId: "12345-6789-RC0001",
     address: {
       street: "1234 Sherbrooke St W",
@@ -44,8 +44,8 @@ export function seed(): void {
       lng: -73.5673,
     },
     phone: "+1 (514) 555-0000",
-    email: "info@royallimo.com",
-    website: "https://royallimo.com",
+    email: "ops@chauffeuross.com",
+    website: "https://chauffeuros.ca",
     plan: "enterprise",
     status: "active",
     maxVehicles: 50,
@@ -74,7 +74,7 @@ export function seed(): void {
   // ── Users ─────────────────────────────────────────────
   const users: User[] = [
     {
-      id: "user_fatme", organizationId: ORG_ID, email: "fatme@royallimo.com",
+      id: "user_fatme", organizationId: ORG_ID, email: "fatme@chauffeuross.com",
       firstName: "Fatme", lastName: "Mortada", fullName: "Fatme Mortada",
       role: "owner", status: "active", phone: "+1 (514) 555-0001",
       lastLoginAt: NOW,
@@ -101,7 +101,7 @@ export function seed(): void {
       createdAt: "2024-01-15T00:00:00Z", updatedAt: NOW,
     },
     {
-      id: "user_sarah", organizationId: ORG_ID, email: "sarah@royallimo.com",
+      id: "user_sarah", organizationId: ORG_ID, email: "sarah@chauffeuross.com",
       firstName: "Sarah", lastName: "Martinez", fullName: "Sarah Martinez",
       role: "dispatcher", status: "active", phone: "+1 (514) 555-0002",
       lastLoginAt: "2026-07-02T08:30:00Z",
@@ -241,7 +241,7 @@ export function seed(): void {
   const drivers: Driver[] = [
     {
       id: drvId("david"), organizationId: ORG_ID, firstName: "David", lastName: "Chen", fullName: "David Chen",
-      email: "david.chen@royallimo.com", phone: "+1 (514) 555-2001",
+      email: "david.chen@chauffeuross.com", phone: "+1 (514) 555-2001",
       status: "on_trip", licenseNumber: "C4B-987654", licenseClass: "Class 4B",
       licenseExpiry: "2027-06-15T00:00:00Z", medicalExpiry: "2027-03-01T00:00:00Z",
       insuranceExpiry: "2027-01-01T00:00:00Z", assignedVehicleId: "veh_escalade1",
@@ -261,7 +261,7 @@ export function seed(): void {
     },
     {
       id: drvId("michael"), organizationId: ORG_ID, firstName: "Michael", lastName: "Torres", fullName: "Michael Torres",
-      email: "michael.torres@royallimo.com", phone: "+1 (514) 555-2002",
+      email: "michael.torres@chauffeuross.com", phone: "+1 (514) 555-2002",
       status: "available", licenseNumber: "C4B-123789", licenseClass: "Class 4B",
       licenseExpiry: "2028-01-10T00:00:00Z", assignedVehicleId: "veh_suburban",
       rating: 4.7, totalTrips: 218, totalRevenue: 92000, completionRate: 0.97, onTimeRate: 0.94,
@@ -281,7 +281,7 @@ export function seed(): void {
     },
     {
       id: drvId("alex"), organizationId: ORG_ID, firstName: "Alex", lastName: "Kim", fullName: "Alex Kim",
-      email: "alex.kim@royallimo.com", phone: "+1 (514) 555-2003",
+      email: "alex.kim@chauffeuross.com", phone: "+1 (514) 555-2003",
       status: "available", licenseNumber: "C4B-456321", licenseClass: "Class 4B",
       licenseExpiry: "2026-12-20T00:00:00Z", assignedVehicleId: "veh_sprinter",
       rating: 4.8, totalTrips: 156, totalRevenue: 68000, completionRate: 0.98, onTimeRate: 0.97,
@@ -300,7 +300,7 @@ export function seed(): void {
     },
     {
       id: drvId("james"), organizationId: ORG_ID, firstName: "James", lastName: "Wilson", fullName: "James Wilson",
-      email: "james.wilson@royallimo.com", phone: "+1 (514) 555-2004",
+      email: "james.wilson@chauffeuross.com", phone: "+1 (514) 555-2004",
       status: "available", licenseNumber: "C4B-789654", licenseClass: "Class 4B",
       licenseExpiry: "2027-08-05T00:00:00Z", assignedVehicleId: "veh_bmw7",
       rating: 5.0, totalTrips: 420, totalRevenue: 178000, completionRate: 0.99, onTimeRate: 0.98,
@@ -320,7 +320,7 @@ export function seed(): void {
     },
     {
       id: drvId("sam"), organizationId: ORG_ID, firstName: "Sam", lastName: "Rivers", fullName: "Sam Rivers",
-      email: "sam.rivers@royallimo.com", phone: "+1 (514) 555-2005",
+      email: "sam.rivers@chauffeuross.com", phone: "+1 (514) 555-2005",
       status: "off_duty", licenseNumber: "C4B-321987", licenseClass: "Class 4B",
       licenseExpiry: "2026-11-30T00:00:00Z", assignedVehicleId: "veh_navigator",
       rating: 4.6, totalTrips: 98, totalRevenue: 42000, completionRate: 0.95, onTimeRate: 0.92,
@@ -340,7 +340,7 @@ export function seed(): void {
     },
     {
       id: drvId("omar"), organizationId: ORG_ID, firstName: "Omar", lastName: "Hassan", fullName: "Omar Hassan",
-      email: "omar.hassan@royallimo.com", phone: "+1 (514) 555-2006",
+      email: "omar.hassan@chauffeuross.com", phone: "+1 (514) 555-2006",
       status: "available", licenseNumber: "C4B-654987", licenseClass: "Class 4B",
       licenseExpiry: "2027-04-22T00:00:00Z", assignedVehicleId: "veh_escalade2",
       rating: 4.9, totalTrips: 275, totalRevenue: 118000, completionRate: 0.97, onTimeRate: 0.95,

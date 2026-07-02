@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Building2, Check, ChevronDown, Plus, Settings } from "lucide-react";
 
 const companies = [
-  { id: "org_demo001", name: "Royal Limousine Montreal", plan: "Enterprise", initials: "RL" },
+  { id: "org_demo001", name: "ChauffeurOS Fleet Operations", plan: "Enterprise", initials: "CF" },
   { id: "org_002", name: "Toronto Executive Transport", plan: "Business", initials: "TE" },
   { id: "org_003", name: "Vancouver Luxury Fleet", plan: "Professional", initials: "VL" },
 ];

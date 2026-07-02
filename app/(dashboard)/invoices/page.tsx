@@ -171,7 +171,7 @@ export default function FinancialOperationsCenter() {
             <div className="border border-neutral-200 rounded-xl p-6 bg-white">
               <div className="flex justify-between items-start mb-6">
                 <div><h3 className="text-xl font-black text-neutral-800">INVOICE</h3><p className="text-sm font-mono font-bold text-brand-700 mt-1">{selected.invoiceNumber}</p></div>
-                <div className="text-right"><p className="text-sm font-bold text-neutral-800">Royal Limousine Montreal</p><p className="text-xs text-neutral-400">1234 Sherbrooke St W</p><p className="text-xs text-neutral-400">Montreal, QC H3G 1H1</p><p className="text-xs text-neutral-400">Tax ID: 12345-6789</p></div>
+                <div className="text-right"><p className="text-sm font-bold text-neutral-800">ChauffeurOS Fleet Operations</p><p className="text-xs text-neutral-400">1234 Sherbrooke St W</p><p className="text-xs text-neutral-400">Montreal, QC H3G 1H1</p><p className="text-xs text-neutral-400">Tax ID: 12345-6789</p></div>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-neutral-25 rounded-lg">
                 <div><p className="text-[10px] font-bold text-neutral-400 uppercase">Bill To</p><p className="text-sm font-bold text-neutral-800">{selCustomer.fullName}</p>{selCustomer.company && <p className="text-xs text-neutral-500">{selCustomer.company}</p>}<p className="text-xs text-neutral-400">{selCustomer.email}</p></div>
