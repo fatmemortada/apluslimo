@@ -506,10 +506,12 @@ export function seed(): void {
     {
       id: "inbox_aplus", organizationId: ORG_ID,
       email: "info@apluslimo.ca", companyName: "A Plus Limo",
-      displayName: "A Plus Limo", provider: "mock",
-      syncStatus: "demo", enabled: true, lastSyncAt: NOW,
-      unreadCount: 3, totalEmails: 8,
+      displayName: "A Plus Limo", provider: "hostinger",
+      syncStatus: "disconnected", enabled: true,
+      unreadCount: 0, totalEmails: 0,
       oauthConnected: false,
+      imapHost: "imap.hostinger.com", imapPort: 993, imapSecure: true,
+      smtpHost: "smtp.hostinger.com", smtpPort: 465, smtpSecure: true,
       createdAt: "2026-01-01T00:00:00Z", updatedAt: NOW,
     },
     {
@@ -535,58 +537,6 @@ export function seed(): void {
 
   // ── Email Messages ────────────────────────────────────────
   const emails: Array<Omit<EmailMessage, "priority" | "category">> = [
-    // ── A Plus Limo inbox ──
-    {
-      id: "email_aplus_001", organizationId: ORG_ID, inboxId: "inbox_aplus",
-      subject: "Airport Transfer Request — July 15",
-      from: { name: "James Wilson", email: "jwilson@corp.com" },
-      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
-      cc: [], replyTo: "jwilson@corp.com",
-      body: "Hi team,\n\nI need a luxury SUV transfer from YUL airport to downtown Montreal on July 15. Flight arrives at 14:30. 2 passengers, 3 suitcases.\n\nPlease send a quote.\n\nBest,\nJames Wilson",
-      bodyPreview: "I need a luxury SUV transfer from YUL airport to downtown Montreal on July 15...",
-      status: "unread", labels: ["booking_request", "airport"],
-      attachments: [], threadId: "thread_aplus_001",
-      receivedAt: "2026-07-02T08:15:00Z", createdAt: "2026-07-02T08:15:00Z", updatedAt: "2026-07-02T08:15:00Z",
-    },
-    {
-      id: "email_aplus_002", organizationId: ORG_ID, inboxId: "inbox_aplus",
-      subject: "Re: Weekly Corporate Account Summary",
-      from: { name: "Sarah Chen", email: "sarah.chen@techcorp.com" },
-      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
-      cc: ["accounts@techcorp.com"].map(e => ({ name: "Accounts", email: e })),
-      replyTo: "sarah.chen@techcorp.com",
-      body: "Hi there,\n\nCould you please send me the trip summary for last month? We need it for our expense reconciliation.\n\nThanks,\nSarah",
-      bodyPreview: "Could you please send me the trip summary for last month? We need it for our expense reconciliation.",
-      status: "read", labels: ["corporate", "invoice"],
-      attachments: [], threadId: "thread_aplus_002",
-      receivedAt: "2026-07-01T11:30:00Z", createdAt: "2026-07-01T11:30:00Z", updatedAt: "2026-07-02T08:00:00Z",
-    },
-    {
-      id: "email_aplus_003", organizationId: ORG_ID, inboxId: "inbox_aplus",
-      subject: "VIP Client — Wedding Event on Aug 20",
-      from: { name: "Emily Watson", email: "emily.watson@email.com" },
-      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
-      cc: [], replyTo: "emily.watson@email.com",
-      body: "Hello,\n\nWe are looking to book a stretch limo for our wedding on August 20. Pickup from church at 16:00, reception venue after. Approximately 8 passengers.\n\nPlease advise availability and pricing.\n\nBest regards,\nEmily Watson",
-      bodyPreview: "We are looking to book a stretch limo for our wedding on August 20...",
-      status: "unread", labels: ["wedding", "quote_request"],
-      attachments: [], threadId: "thread_aplus_003",
-      receivedAt: "2026-07-02T09:45:00Z", createdAt: "2026-07-02T09:45:00Z", updatedAt: "2026-07-02T09:45:00Z",
-    },
-    {
-      id: "email_aplus_004", organizationId: ORG_ID, inboxId: "inbox_aplus",
-      subject: "Invoice INV-2026-0842 Paid",
-      from: { name: "Michael Lee", email: "michael.lee@email.com" },
-      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
-      cc: [], replyTo: "michael.lee@email.com",
-      body: "Hi,\n\nJust confirming that invoice INV-2026-0842 has been paid via bank transfer. Receipt attached.\n\nRegards,\nMichael Lee",
-      bodyPreview: "Just confirming that invoice INV-2026-0842 has been paid via bank transfer.",
-      status: "read", labels: ["invoice", "payment"],
-      attachments: [{ id: "att_aplus_001", filename: "payment_receipt.pdf", mimeType: "application/pdf", size: 245000, url: "#" }],
-      threadId: "thread_aplus_004",
-      receivedAt: "2026-06-30T15:20:00Z", createdAt: "2026-06-30T15:20:00Z", updatedAt: "2026-07-01T10:00:00Z",
-    },
-
     // ── Montreal Royal Limo inbox ──
     {
       id: "email_mtl_001", organizationId: ORG_ID, inboxId: "inbox_mtlroyal",
@@ -693,20 +643,6 @@ export function seed(): void {
       receivedAt: "2026-07-01T18:30:00Z", createdAt: "2026-07-01T18:30:00Z", updatedAt: "2026-07-01T18:30:00Z",
     },
 
-    // ── Cancellation ──
-    {
-      id: "email_aplus_005", organizationId: ORG_ID, inboxId: "inbox_aplus",
-      subject: "Booking Cancellation — MRL-1045",
-      from: { name: "David Miller", email: "david.miller@email.com" },
-      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
-      cc: [], replyTo: "david.miller@email.com",
-      body: "Hi,\n\nI need to cancel my booking for July 2 (MRL-1045). Sorry for the late notice — our plans have changed.\n\nPlease confirm the cancellation and any fees.\n\nBest,\nDavid Miller",
-      bodyPreview: "I need to cancel my booking MRL-1045 for July 2. Plans have changed.",
-      status: "unread", labels: ["cancellation", "booking"],
-      attachments: [], threadId: "thread_aplus_005",
-      receivedAt: "2026-07-02T12:15:00Z", createdAt: "2026-07-02T12:15:00Z", updatedAt: "2026-07-02T12:15:00Z",
-    },
-
     // ── Complaint ──
     {
       id: "email_mtl_006", organizationId: ORG_ID, inboxId: "inbox_mtlroyal",
@@ -721,19 +657,6 @@ export function seed(): void {
       receivedAt: "2026-07-02T09:00:00Z", createdAt: "2026-07-02T09:00:00Z", updatedAt: "2026-07-02T09:00:00Z",
     },
 
-    // ── General Inquiry ──
-    {
-      id: "email_aplus_006", organizationId: ORG_ID, inboxId: "inbox_aplus",
-      subject: "Question About Airport Services",
-      from: { name: "Jennifer Adams", email: "jennifer.adams@email.com" },
-      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
-      cc: [], replyTo: "jennifer.adams@email.com",
-      body: "Hello,\n\nI'm visiting Montreal next month and was wondering what types of vehicles you offer for airport transfers. Do you have options for child seats?\n\nAlso, what is your cancellation policy?\n\nThanks,\nJennifer Adams",
-      bodyPreview: "What vehicle types for airport transfers? Do you have child seats?",
-      status: "unread", labels: ["inquiry", "general"],
-      attachments: [], threadId: "thread_aplus_006",
-      receivedAt: "2026-07-02T14:30:00Z", createdAt: "2026-07-02T14:30:00Z", updatedAt: "2026-07-02T14:30:00Z",
-    },
   ];
   // Auto-compute category, priority, and parsed data for all emails
   emails.forEach((partial) => {

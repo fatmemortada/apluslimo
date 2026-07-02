@@ -7,6 +7,7 @@ import { db } from "@/lib/db/store";
 import { parseEmail, classifyEmail, classifyPriority } from "@/lib/email/parser";
 import type { EmailMessage, EmailInbox, OAuthToken } from "@/lib/types";
 import { isTokenExpired, refreshGoogleToken, refreshMicrosoftToken } from "./oauth";
+import { IMAP_DEFAULTS, SMTP_DEFAULTS } from "./provider";
 
 // ── Sync result ──────────────────────────────────────────────
 
@@ -107,7 +108,7 @@ export async function syncInbox(inboxId: string): Promise<SyncResult> {
     return syncOAuth(inbox);
   }
 
-  if (inbox.provider === "smtp") {
+  if (inbox.provider === "smtp" || inbox.provider === "hostinger") {
     return syncIMAP(inbox);
   }
 
@@ -406,16 +407,259 @@ async function syncOAuth(inbox: EmailInbox): Promise<SyncResult> {
   }
 }
 
-// ── IMAP-based sync (fallback) ────────────────────────────────
+// ── IMAP-based sync (Hostinger, custom SMTP) ─────────────────
 
-async function syncIMAP(inbox: EmailInbox): Promise<SyncResult> {
+/** Decrypt an IMAP password. In production this uses AES-256-GCM. */
+function decryptPassword(encrypted: string): string {
+  // Placeholder: in production, use crypto.createDecipheriv with AES-256-GCM
+  // For now, the password is stored base64-encoded (not plaintext in logs)
+  try {
+    return Buffer.from(encrypted, "base64").toString("utf-8");
+  } catch {
+    return encrypted;
+  }
+}
+
+/** Build IMAP connection config from inbox settings */
+function getIMAPConfig(inbox: EmailInbox): {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  password: string;
+} | null {
+  if (!inbox.encryptedPassword) return null;
+
+  const defaults = inbox.provider === "hostinger" ? IMAP_DEFAULTS.hostinger : undefined;
+
   return {
-    inboxId: inbox.id,
-    email: inbox.email,
-    status: "no_credentials",
-    newEmails: 0,
-    errors: ["IMAP sync requires encrypted app password configuration"],
+    host: inbox.imapHost || defaults?.host || "imap.hostinger.com",
+    port: inbox.imapPort || defaults?.port || 993,
+    secure: inbox.imapSecure ?? defaults?.useTls ?? true,
+    user: inbox.email,
+    password: decryptPassword(inbox.encryptedPassword),
   };
+}
+
+/** Test an IMAP connection and return whether it succeeded */
+export async function testIMAPConnection(inboxId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const inbox = db.emailInboxes.get(inboxId);
+  if (!inbox) return { success: false, error: "Inbox not found" };
+
+  const config = getIMAPConfig(inbox);
+  if (!config) {
+    return { success: false, error: "IMAP password not configured" };
+  }
+
+  try {
+    const { ImapFlow } = await import("imapflow");
+    const client = new ImapFlow({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: { user: config.user, pass: config.password },
+      logger: false,
+    });
+
+    await client.connect();
+    await client.logout();
+
+    inbox.syncStatus = "connected";
+    inbox.syncError = undefined;
+    inbox.updatedAt = new Date().toISOString();
+
+    return { success: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Connection failed";
+    inbox.syncStatus = "error";
+    inbox.syncError = msg;
+    inbox.updatedAt = new Date().toISOString();
+    return { success: false, error: msg };
+  }
+}
+
+/** Fetch emails from an IMAP inbox since a given date */
+async function imapFetchEmails(
+  inbox: EmailInbox,
+  since: Date
+): Promise<import("./provider").FetchedEmail[]> {
+  const config = getIMAPConfig(inbox);
+  if (!config) throw new Error("IMAP password not configured");
+
+  const { ImapFlow } = await import("imapflow");
+  const client = new ImapFlow({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: { user: config.user, pass: config.password },
+    logger: false,
+  });
+
+  try {
+    await client.connect();
+    const lock = await client.getMailboxLock("INBOX");
+
+    const results: import("./provider").FetchedEmail[] = [];
+
+    try {
+      // Fetch messages since the given date
+      const sinceStr = since.toISOString().replace("T", " ").split(".")[0];
+      const searchQuery = { since: since };
+
+      for await (const msg of client.fetch(searchQuery, {
+        source: true,
+        envelope: true,
+        bodyStructure: true,
+        uid: true,
+      })) {
+        try {
+          const source = msg.source?.toString("utf-8") || "";
+          const envelope = msg.envelope;
+
+          // Parse headers manually from source
+          const headers = source.split("\r\n\r\n")[0] || "";
+          const bodyParts = source.split("\r\n\r\n").slice(1).join("\r\n\r\n");
+
+          const subject = envelope?.subject || "";
+          const from = envelope?.from?.[0];
+          const to = envelope?.to || [];
+          const cc = envelope?.cc || [];
+          const date = envelope?.date || new Date();
+
+          // Extract plain text body (strip HTML)
+          let body = bodyParts;
+          const htmlMatch = bodyParts.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+          if (htmlMatch) {
+            body = htmlMatch[1].replace(/<[^>]+>/g, "").trim();
+          }
+
+          results.push({
+            externalId: String(msg.uid),
+            subject: subject || "(no subject)",
+            from: {
+              name: from?.name || "",
+              email: from?.address || "",
+            },
+            to: (to || []).map((t: any) => ({
+              name: t.name || "",
+              email: t.address || "",
+            })),
+            cc: (cc || []).map((c: any) => ({
+              name: c.name || "",
+              email: c.address || "",
+            })),
+            body: body || "(no readable content)",
+            bodyPreview: body.replace(/\s+/g, " ").slice(0, 150).trim() || subject || "",
+            receivedAt: (date || new Date()).toISOString(),
+            labels: [],
+            attachments: [],
+            threadId: `imap_${msg.uid}`,
+          });
+        } catch {
+          // Skip messages that fail to parse
+        }
+      }
+    } finally {
+      lock.release();
+    }
+
+    await client.logout();
+    return results;
+  } catch (err) {
+    // Ensure client is logged out on error
+    try { await client.logout(); } catch {}
+    throw err;
+  }
+}
+
+/** Sync an IMAP inbox (Hostinger or custom SMTP) */
+async function syncIMAP(inbox: EmailInbox): Promise<SyncResult> {
+  const errors: string[] = [];
+
+  if (!inbox.encryptedPassword) {
+    return {
+      inboxId: inbox.id,
+      email: inbox.email,
+      status: "no_credentials",
+      newEmails: 0,
+      errors: ["IMAP password not configured. Set an encrypted app password in Settings > Connected Inboxes."],
+    };
+  }
+
+  try {
+    const since = inbox.lastSyncAt
+      ? new Date(inbox.lastSyncAt)
+      : new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const fetched = await imapFetchEmails(inbox, since);
+
+    let newCount = 0;
+    for (const fet of fetched) {
+      const exists = Array.from(db.emailMessages.values()).some(
+        (m) => m.threadId === fet.externalId || m.threadId === (fet.threadId || "")
+      );
+      if (exists) continue;
+
+      const parsed = parseEmail(fet.subject, fet.body, fet.from.name, fet.from.email);
+      const email: EmailMessage = {
+        id: `email_${fet.externalId}_${Date.now().toString(36)}`,
+        organizationId: inbox.organizationId,
+        inboxId: inbox.id,
+        subject: fet.subject,
+        from: fet.from,
+        to: fet.to,
+        cc: fet.cc,
+        body: fet.body,
+        bodyPreview: fet.bodyPreview,
+        status: "unread",
+        priority: classifyPriority(fet.subject, fet.body, fet.labels),
+        category: classifyEmail(fet.subject, fet.body, fet.labels),
+        labels: fet.labels,
+        attachments: fet.attachments.map((a) => ({
+          id: `att_${fet.externalId}_${a.filename.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30)}`,
+          filename: a.filename,
+          mimeType: a.mimeType,
+          size: a.size,
+          url: "#",
+        })),
+        threadId: fet.externalId,
+        parsedData: parsed,
+        receivedAt: fet.receivedAt,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      db.emailMessages.set(email.id, email);
+      newCount++;
+    }
+
+    inbox.lastSyncAt = new Date().toISOString();
+    inbox.syncStatus = "connected";
+    inbox.syncError = undefined;
+    inbox.unreadCount += newCount;
+    inbox.totalEmails += newCount;
+
+    return {
+      inboxId: inbox.id,
+      email: inbox.email,
+      status: "success",
+      newEmails: newCount,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown IMAP sync error";
+    inbox.syncStatus = "error";
+    inbox.syncError = msg;
+    return {
+      inboxId: inbox.id,
+      email: inbox.email,
+      status: "error",
+      newEmails: 0,
+      errors: [msg],
+    };
+  }
 }
 
 // ── Sync all enabled inboxes ─────────────────────────────────

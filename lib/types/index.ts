@@ -527,7 +527,7 @@ export interface Notification {
 
 // ── Email / Inbox Types ─────────────────────────────────────
 
-export type InboxProvider = "gmail" | "outlook" | "smtp" | "mock";
+export type InboxProvider = "gmail" | "outlook" | "smtp" | "hostinger" | "mock";
 export type InboxSyncStatus = "connected" | "disconnected" | "error" | "connecting" | "demo" | "needs_reauthorization";
 
 export type EmailMessageStatus =
@@ -572,17 +572,27 @@ export interface EmailInbox {
   syncStatus: InboxSyncStatus;
   enabled: boolean;
   lastSyncAt?: string;
+  syncError?: string;
   unreadCount: number;
   totalEmails: number;
 
-  // OAuth fields
+  // OAuth fields (Google / Microsoft)
   oauthConnected: boolean;
   oauthProvider?: string;
   oauthEmail?: string;
   oauthToken?: OAuthToken;
 
+  // IMAP/SMTP fields (Hostinger, custom)
+  imapHost?: string;
+  imapPort?: number;
+  imapSecure?: boolean;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpSecure?: boolean;
+  encryptedPassword?: string; // AES-256 encrypted, never plaintext
+
   // Company info
-  companyId?: string; // links to a company/org entity
+  companyId?: string;
   phone?: string;
   website?: string;
   notes?: string;

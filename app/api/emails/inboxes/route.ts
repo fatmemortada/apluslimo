@@ -33,6 +33,13 @@ export async function PATCH(request: NextRequest) {
     "companyName",
     "syncStatus",
     "oauthConnected",
+    "imapHost",
+    "imapPort",
+    "imapSecure",
+    "smtpHost",
+    "smtpPort",
+    "smtpSecure",
+    "encryptedPassword",
   ] as const;
 
   for (const field of allowedFields) {

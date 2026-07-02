@@ -101,9 +101,14 @@ export const GRAPH_SCOPES = [
 export const GRAPH_AUTH_URL = "https://login.microsoftonline.com";
 export const GRAPH_TOKEN_URL = "https://login.microsoftonline.com";
 
-// ── IMAP Defaults ────────────────────────────────────────────
+// ── IMAP/SMTP Defaults ───────────────────────────────────────
 
 export const IMAP_DEFAULTS: Record<string, { host: string; port: number; useTls: boolean }> = {
   gmail: { host: "imap.gmail.com", port: 993, useTls: true },
   outlook: { host: "outlook.office365.com", port: 993, useTls: true },
+  hostinger: { host: "imap.hostinger.com", port: 993, useTls: true },
+};
+
+export const SMTP_DEFAULTS: Record<string, { host: string; port: number; useTls: boolean }> = {
+  hostinger: { host: "smtp.hostinger.com", port: 465, useTls: true },
 };

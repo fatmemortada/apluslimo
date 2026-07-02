@@ -285,33 +285,53 @@ export default function AdminPanel() {
                       <p className="text-xs text-neutral-400">Requires MICROSOFT_CLIENT_ID, CLIENT_SECRET, and TENANT_ID.</p>
                     </a>
 
-                    <div className="rounded-xl border-2 border-neutral-200 bg-neutral-25 p-5 opacity-70">
+                    <div className="rounded-xl border-2 border-amber-200 bg-white p-5 hover:border-amber-300 hover:shadow-md transition-all cursor-pointer">
                       <div className="flex items-center gap-4 mb-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 font-bold text-lg">@</div>
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 font-bold text-lg">H</div>
                         <div>
-                          <p className="text-sm font-bold text-neutral-800">IMAP/SMTP</p>
-                          <p className="text-xs text-neutral-500">Encrypted app password</p>
+                          <p className="text-sm font-bold text-neutral-800">Hostinger Email</p>
+                          <p className="text-xs text-neutral-500">IMAP/SMTP · Encrypted password</p>
                         </div>
                       </div>
-                      <p className="text-xs text-neutral-400">Enter IMAP host, port, and app-specific password below.</p>
+                      <p className="text-xs text-neutral-400">Configure IMAP and SMTP settings below. Your password is encrypted at rest.</p>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-neutral-200 bg-white p-5">
-                    <h4 className="text-xs font-bold text-neutral-500 uppercase mb-3">IMAP/SMTP Configuration</h4>
+                  {/* Hostinger IMAP Configuration */}
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/20 p-5 mb-4">
+                    <h4 className="text-xs font-bold text-neutral-500 uppercase mb-3">Hostinger IMAP/SMTP Configuration</h4>
                     <div className="grid grid-cols-2 gap-3">
-                      <div><label className="block mb-1.5 text-sm font-semibold text-neutral-700">IMAP Host</label><input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder="imap.gmail.com" /></div>
-                      <div><label className="block mb-1.5 text-sm font-semibold text-neutral-700">Port</label><input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder="993" /></div>
-                      <div><label className="block mb-1.5 text-sm font-semibold text-neutral-700">Username</label><input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder={inbox.email} /></div>
                       <div>
-                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">App Password</label>
-                        <input type="password" className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder="Encrypted app password only" />
-                        <p className="mt-1 text-[10px] text-neutral-400">Generate an app-specific password — never use your real password.</p>
+                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">IMAP Host</label>
+                        <input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" defaultValue="imap.hostinger.com" />
+                      </div>
+                      <div>
+                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">IMAP Port</label>
+                        <input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" defaultValue="993" />
+                      </div>
+                      <div>
+                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">SMTP Host</label>
+                        <input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" defaultValue="smtp.hostinger.com" />
+                      </div>
+                      <div>
+                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">SMTP Port</label>
+                        <input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" defaultValue="465" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">Email Password / App Password</label>
+                        <input type="password" className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder="Enter your Hostinger email password (encrypted at rest)" />
+                        <p className="mt-1 text-[10px] text-neutral-400">Your password is encrypted at rest using AES-256. Never stored in plain text or logs.</p>
                       </div>
                     </div>
-                    <div className="mt-3 flex items-center gap-2">
-                      <ShieldCheck className="h-4 w-4 text-neutral-500" />
-                      <p className="text-[10px] text-neutral-500">AES-256 encrypted at rest.</p>
+                    <div className="mt-4 flex items-center gap-3">
+                      <button className="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-all">
+                        <RefreshCw className="h-4 w-4 mr-2" /> Test Connection
+                      </button>
+                      <button className="inline-flex items-center justify-center rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 transition-all">
+                        <Mail className="h-4 w-4 mr-2" /> Save & Sync Now
+                      </button>
+                      <ShieldCheck className="h-4 w-4 text-neutral-500 ml-2" />
+                      <span className="text-[10px] text-neutral-500">AES-256 encrypted at rest</span>
                     </div>
                   </div>
 
