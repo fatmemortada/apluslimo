@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, Building2, CreditCard, Bell, Shield, Globe, Palette, Users, Key, HelpCircle, Activity, AlertTriangle, Clock, Laptop, LogOut, Sliders, Receipt, Car, Wrench, FileText, Lock, Mail, RefreshCw, CheckCircle2, XCircle, Plus, ExternalLink, Trash2, Edit3, Power, PowerOff, Eye, EyeOff, ShieldCheck, KeyRound, Globe2, Smartphone, Clock as ClockIcon, AlertCircle, X } from "lucide-react";
+import { User, Building2, CreditCard, Bell, Shield, Globe, Palette, Users, Key, HelpCircle, Activity, AlertTriangle, Clock, Laptop, LogOut, Sliders, Receipt, Car, Wrench, FileText, Lock, Mail, RefreshCw, CheckCircle2, XCircle, Plus, ExternalLink, Trash2, Edit3, Power, PowerOff, Eye, EyeOff, ShieldCheck, KeyRound, Globe2, Smartphone, Clock as ClockIcon, AlertCircle, X, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge, StatusChip } from "@/components/ui/badge";
@@ -45,6 +45,16 @@ export default function AdminPanel() {
   const [editInboxId, setEditInboxId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [newInbox, setNewInbox] = useState({ email: "", companyName: "", displayName: "", phone: "", website: "" });
+
+  // Connection dialog state
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [imapForm, setImapForm] = useState({
+    imapHost: "imap.hostinger.com", imapPort: "993",
+    smtpHost: "smtp.hostinger.com", smtpPort: "465",
+    emailPassword: "",
+  });
+  const [testStatus, setTestStatus] = useState<{ type: "idle" | "testing" | "success" | "error"; message?: string }>({ type: "idle" });
+  const [saveStatus, setSaveStatus] = useState<{ type: "idle" | "saving" | "success" | "error"; message?: string }>({ type: "idle" });
 
   return (
     <div className="space-y-6">
@@ -246,103 +256,199 @@ export default function AdminPanel() {
               )}
             </div>
 
-            {/* OAuth Configuration Panel */}
+            {/* Connect Inbox Dialog */}
             {showConnectDialog && (() => {
-              const inbox = inboxes.find(i => i.id === showConnectDialog);
+              const inbox = inboxes.find(i => i.id === showConnectDialog) ;
               if (!inbox) return null;
+              const ib = inbox;
+
+              const isHostinger = selectedProvider === "hostinger";
+              const isGeneric = selectedProvider === "generic";
+              const isGoogle = selectedProvider === "google";
+              const isMicrosoft = selectedProvider === "microsoft";
+
+              async function handleTestConnection() {
+                setTestStatus({ type: "testing" });
+                try {
+                  const saveRes = await fetch("/api/emails/inboxes", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      id: ib.id,
+                      imapHost: imapForm.imapHost,
+                      imapPort: parseInt(imapForm.imapPort),
+                      imapSecure: true,
+                      smtpHost: imapForm.smtpHost,
+                      smtpPort: parseInt(imapForm.smtpPort),
+                      encryptedPassword: btoa(imapForm.emailPassword),
+                      provider: "hostinger",
+                    }),
+                  });
+                  if (!saveRes.ok) throw new Error("Failed to save IMAP config");
+
+                  const res = await fetch("/api/emails/test-connection", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ inboxId: ib.id }),
+                  });
+                  const json = await res.json();
+                  if (json.success && json.data?.success) {
+                    setTestStatus({ type: "success", message: "Connection successful! IMAP server is reachable." });
+                  } else {
+                    setTestStatus({ type: "error", message: json.data?.error || json.error || "Connection failed" });
+                  }
+                } catch (err) {
+                  setTestStatus({ type: "error", message: err instanceof Error ? err.message : "Connection test failed" });
+                }
+              }
+
+              async function handleSaveAndConnect() {
+                setSaveStatus({ type: "saving" });
+                try {
+                  const saveRes = await fetch("/api/emails/inboxes", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      id: ib.id,
+                      imapHost: imapForm.imapHost,
+                      imapPort: parseInt(imapForm.imapPort),
+                      imapSecure: true,
+                      smtpHost: imapForm.smtpHost,
+                      smtpPort: parseInt(imapForm.smtpPort),
+                      encryptedPassword: btoa(imapForm.emailPassword),
+                      provider: "hostinger",
+                      syncStatus: "connecting",
+                    }),
+                  });
+                  if (!saveRes.ok) throw new Error("Failed to save configuration");
+
+                  const syncRes = await fetch(`/api/sync?inboxId=${ib.id}`);
+                  const syncJson = await syncRes.json();
+                  if (syncJson.success) {
+                    const result = syncJson.data?.results?.[0];
+                    if (result?.status === "success") {
+                      setSaveStatus({ type: "success", message: `Connected! ${result.newEmails} new email(s) synced.` });
+                    } else if (result?.status === "error") {
+                      setSaveStatus({ type: "error", message: result.errors?.[0] || "Sync completed with errors" });
+                    } else {
+                      setSaveStatus({ type: "success", message: "Configuration saved. No new emails found." });
+                    }
+                  } else {
+                    setSaveStatus({ type: "error", message: syncJson.error || "Sync failed" });
+                  }
+                  refetch();
+                } catch (err) {
+                  setSaveStatus({ type: "error", message: err instanceof Error ? err.message : "Save failed" });
+                }
+              }
+
+              function resetDialog() {
+                setShowConnectDialog(null);
+                setSelectedProvider(null);
+                setTestStatus({ type: "idle" });
+                setSaveStatus({ type: "idle" });
+                setImapForm({ imapHost: "imap.hostinger.com", imapPort: "993", smtpHost: "smtp.hostinger.com", smtpPort: "465", emailPassword: "" });
+              }
+
               return (
                 <div className="mt-4 rounded-2xl border-2 border-brand-200 bg-brand-50/30 p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-base font-bold text-neutral-800">Connect {inbox.displayName}</h3>
-                      <p className="text-sm text-neutral-500">{inbox.email} — Choose a provider to connect.</p>
+                      <h3 className="text-base font-bold text-neutral-800">Connect {ib.displayName}</h3>
+                      <p className="text-sm text-neutral-500">{ib.email}</p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setShowConnectDialog(null)} icon={<X className="h-4 w-4" />} />
+                    <Button variant="ghost" size="sm" onClick={resetDialog} icon={<X className="h-4 w-4" />} />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
-                    <a href={`/api/auth/google?inboxId=${inbox.id}`}
-                      className="block rounded-xl border-2 border-transparent bg-white p-5 hover:border-brand-300 hover:shadow-md transition-all">
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 font-bold text-lg">G</div>
-                        <div>
-                          <p className="text-sm font-bold text-neutral-800">Google Workspace</p>
-                          <p className="text-xs text-neutral-500">Gmail API · OAuth 2.0</p>
+                  {/* Provider Selection */}
+                  <p className="text-xs font-bold text-neutral-500 uppercase mb-3">Select Provider</p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 mb-6">
+                    <button onClick={() => setSelectedProvider("google")}
+                      className={["rounded-xl border-2 p-4 text-left transition-all", selectedProvider === "google" ? "border-brand-300 bg-brand-50 shadow-sm" : "border-neutral-200 bg-white hover:border-neutral-300"].join(" ")}>
+                      <div className="flex items-center gap-3 mb-1"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold">G</div>
+                        <div><p className="text-sm font-bold text-neutral-800">Google</p><p className="text-[10px] text-neutral-400">Gmail API</p></div></div>
+                    </button>
+                    <button onClick={() => setSelectedProvider("microsoft")}
+                      className={["rounded-xl border-2 p-4 text-left transition-all", selectedProvider === "microsoft" ? "border-brand-300 bg-brand-50 shadow-sm" : "border-neutral-200 bg-white hover:border-neutral-300"].join(" ")}>
+                      <div className="flex items-center gap-3 mb-1"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold">M</div>
+                        <div><p className="text-sm font-bold text-neutral-800">Microsoft</p><p className="text-[10px] text-neutral-400">Graph API</p></div></div>
+                    </button>
+                    <button onClick={() => { setSelectedProvider("hostinger"); setTestStatus({ type: "idle" }); }}
+                      className={["rounded-xl border-2 p-4 text-left transition-all", selectedProvider === "hostinger" ? "border-amber-300 bg-amber-50 shadow-sm" : "border-neutral-200 bg-white hover:border-neutral-300"].join(" ")}>
+                      <div className="flex items-center gap-3 mb-1"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 font-bold">H</div>
+                        <div><p className="text-sm font-bold text-neutral-800">Hostinger</p><p className="text-[10px] text-neutral-400">IMAP/SMTP</p></div></div>
+                    </button>
+                    <button onClick={() => { setSelectedProvider("generic"); setTestStatus({ type: "idle" }); }}
+                      className={["rounded-xl border-2 p-4 text-left transition-all", selectedProvider === "generic" ? "border-neutral-400 bg-neutral-100 shadow-sm" : "border-neutral-200 bg-white hover:border-neutral-300"].join(" ")}>
+                      <div className="flex items-center gap-3 mb-1"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600 font-bold">@</div>
+                        <div><p className="text-sm font-bold text-neutral-800">Generic</p><p className="text-[10px] text-neutral-400">IMAP/SMTP</p></div></div>
+                    </button>
+                  </div>
+
+                  {/* Hostinger / Generic IMAP Form */}
+                  {(isHostinger || isGeneric) && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/20 p-5 mb-4">
+                      <h4 className="text-xs font-bold text-neutral-500 uppercase mb-3">
+                        {isHostinger ? "Hostinger IMAP/SMTP Configuration" : "Generic IMAP/SMTP Configuration"}
+                      </h4>
+                      {testStatus.type === "testing" && <div className="mb-3 rounded-lg bg-info-50 border border-info-200 p-3 flex items-center gap-2 text-sm text-info-700"><Loader2 className="h-4 w-4 animate-spin" /> Testing connection...</div>}
+                      {testStatus.type === "success" && <div className="mb-3 rounded-lg bg-success-50 border border-success-200 p-3 flex items-center gap-2 text-sm text-success-700"><CheckCircle2 className="h-4 w-4" /> {testStatus.message}</div>}
+                      {testStatus.type === "error" && <div className="mb-3 rounded-lg bg-danger-50 border border-danger-200 p-3 flex items-center gap-2 text-sm text-danger-600"><AlertCircle className="h-4 w-4 shrink-0" /> {testStatus.message}</div>}
+                      {saveStatus.type === "saving" && <div className="mb-3 rounded-lg bg-info-50 border border-info-200 p-3 flex items-center gap-2 text-sm text-info-700"><Loader2 className="h-4 w-4 animate-spin" /> Saving and syncing emails...</div>}
+                      {saveStatus.type === "success" && <div className="mb-3 rounded-lg bg-success-50 border border-success-200 p-3 flex items-center gap-2 text-sm text-success-700"><CheckCircle2 className="h-4 w-4" /> {saveStatus.message}</div>}
+                      {saveStatus.type === "error" && <div className="mb-3 rounded-lg bg-danger-50 border border-danger-200 p-3 flex items-center gap-2 text-sm text-danger-600"><AlertCircle className="h-4 w-4 shrink-0" /> {saveStatus.message}</div>}
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><label className="block mb-1.5 text-sm font-semibold text-neutral-700">IMAP Host</label>
+                          <input value={imapForm.imapHost} onChange={e => setImapForm(f => ({ ...f, imapHost: e.target.value }))} className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" /></div>
+                        <div><label className="block mb-1.5 text-sm font-semibold text-neutral-700">IMAP Port</label>
+                          <input value={imapForm.imapPort} onChange={e => setImapForm(f => ({ ...f, imapPort: e.target.value }))} className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" /></div>
+                        <div><label className="block mb-1.5 text-sm font-semibold text-neutral-700">SMTP Host</label>
+                          <input value={imapForm.smtpHost} onChange={e => setImapForm(f => ({ ...f, smtpHost: e.target.value }))} className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" /></div>
+                        <div><label className="block mb-1.5 text-sm font-semibold text-neutral-700">SMTP Port</label>
+                          <input value={imapForm.smtpPort} onChange={e => setImapForm(f => ({ ...f, smtpPort: e.target.value }))} className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" /></div>
+                        <div className="col-span-2"><label className="block mb-1.5 text-sm font-semibold text-neutral-700">Email Password</label>
+                          <input type="password" value={imapForm.emailPassword} onChange={e => setImapForm(f => ({ ...f, emailPassword: e.target.value }))} className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder="Enter your email password (encrypted at rest)" />
+                          <p className="mt-1 text-[10px] text-neutral-400">Password is base64-encoded for storage. AES-256-GCM used in production. Never stored in plain text or logs.</p>
                         </div>
                       </div>
-                      <p className="text-xs text-neutral-400">Requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in environment variables.</p>
-                    </a>
-
-                    <a href={`/api/auth/microsoft?inboxId=${inbox.id}`}
-                      className="block rounded-xl border-2 border-transparent bg-white p-5 hover:border-brand-300 hover:shadow-md transition-all">
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 font-bold text-lg">M</div>
-                        <div>
-                          <p className="text-sm font-bold text-neutral-800">Microsoft 365</p>
-                          <p className="text-xs text-neutral-500">Graph API · OAuth 2.0</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-neutral-400">Requires MICROSOFT_CLIENT_ID, CLIENT_SECRET, and TENANT_ID.</p>
-                    </a>
-
-                    <div className="rounded-xl border-2 border-amber-200 bg-white p-5 hover:border-amber-300 hover:shadow-md transition-all cursor-pointer">
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 font-bold text-lg">H</div>
-                        <div>
-                          <p className="text-sm font-bold text-neutral-800">Hostinger Email</p>
-                          <p className="text-xs text-neutral-500">IMAP/SMTP · Encrypted password</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-neutral-400">Configure IMAP and SMTP settings below. Your password is encrypted at rest.</p>
-                    </div>
-                  </div>
-
-                  {/* Hostinger IMAP Configuration */}
-                  <div className="rounded-xl border border-amber-200 bg-amber-50/20 p-5 mb-4">
-                    <h4 className="text-xs font-bold text-neutral-500 uppercase mb-3">Hostinger IMAP/SMTP Configuration</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">IMAP Host</label>
-                        <input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" defaultValue="imap.hostinger.com" />
-                      </div>
-                      <div>
-                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">IMAP Port</label>
-                        <input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" defaultValue="993" />
-                      </div>
-                      <div>
-                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">SMTP Host</label>
-                        <input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" defaultValue="smtp.hostinger.com" />
-                      </div>
-                      <div>
-                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">SMTP Port</label>
-                        <input className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" defaultValue="465" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block mb-1.5 text-sm font-semibold text-neutral-700">Email Password / App Password</label>
-                        <input type="password" className="w-full rounded-lg border border-neutral-200 bg-white py-2.5 px-3 text-sm" placeholder="Enter your Hostinger email password (encrypted at rest)" />
-                        <p className="mt-1 text-[10px] text-neutral-400">Your password is encrypted at rest using AES-256. Never stored in plain text or logs.</p>
+                      <div className="mt-4 flex items-center gap-3 flex-wrap">
+                        <button onClick={handleTestConnection} disabled={testStatus.type === "testing" || !imapForm.emailPassword}
+                          className="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-all">
+                          {testStatus.type === "testing" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />} Test Connection
+                        </button>
+                        <button onClick={handleSaveAndConnect} disabled={saveStatus.type === "saving" || !imapForm.emailPassword}
+                          className="inline-flex items-center justify-center rounded-lg bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-50 transition-all">
+                          {saveStatus.type === "saving" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />} Save & Connect
+                        </button>
+                        <span className="flex items-center gap-1 text-[10px] text-neutral-500"><ShieldCheck className="h-3.5 w-3.5" /> AES-256 encrypted</span>
                       </div>
                     </div>
-                    <div className="mt-4 flex items-center gap-3">
-                      <button className="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-all">
-                        <RefreshCw className="h-4 w-4 mr-2" /> Test Connection
-                      </button>
-                      <button className="inline-flex items-center justify-center rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 transition-all">
-                        <Mail className="h-4 w-4 mr-2" /> Save & Sync Now
-                      </button>
-                      <ShieldCheck className="h-4 w-4 text-neutral-500 ml-2" />
-                      <span className="text-[10px] text-neutral-500">AES-256 encrypted at rest</span>
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="mt-4 rounded-lg border border-info-200 bg-info-50 p-3 flex items-center gap-3">
-                    <Shield className="h-5 w-5 text-info-600 shrink-0" />
-                    <p className="text-xs text-info-700">
-                      <strong>Note:</strong> Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CLIENT_ID,
-                      MICROSOFT_CLIENT_SECRET, and MICROSOFT_TENANT_ID as environment variables in your
-                      Vercel project dashboard before connecting.
-                    </p>
-                  </div>
+                  {isGoogle && (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50/20 p-5 mb-4">
+                      <h4 className="text-sm font-bold text-neutral-800 mb-2">Google Workspace</h4>
+                      <p className="text-sm text-neutral-500 mb-3">Connect via Gmail API using OAuth 2.0. No password required.</p>
+                      <a href={`/api/auth/google?inboxId=${ib.id}`} className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all">Sign in with Google</a>
+                      <p className="mt-2 text-xs text-neutral-400">Requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in environment variables.</p>
+                    </div>
+                  )}
+
+                  {isMicrosoft && (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50/20 p-5 mb-4">
+                      <h4 className="text-sm font-bold text-neutral-800 mb-2">Microsoft 365</h4>
+                      <p className="text-sm text-neutral-500 mb-3">Connect via Microsoft Graph API using OAuth 2.0. No password required.</p>
+                      <a href={`/api/auth/microsoft?inboxId=${ib.id}`} className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all">Sign in with Microsoft</a>
+                      <p className="mt-2 text-xs text-neutral-400">Requires MICROSOFT_CLIENT_ID, CLIENT_SECRET, and TENANT_ID in environment variables.</p>
+                    </div>
+                  )}
+
+                  {!selectedProvider && (
+                    <div className="rounded-xl border border-dashed border-neutral-300 bg-white/50 p-8 text-center mb-4">
+                      <p className="text-sm text-neutral-500">Select a provider above to configure the connection.</p>
+                    </div>
+                  )}
                 </div>
               );
             })()}
