@@ -17,6 +17,8 @@ import type {
   Document,
   Notification,
   ActivityLogEntry,
+  EmailInbox,
+  EmailMessage,
 } from "@/lib/types";
 
 // Singleton store — in production this is PostgreSQL
@@ -36,6 +38,8 @@ export interface DatabaseSchema {
   payments: Map<string, Payment>;
   documents: Map<string, Document>;
   notifications: Map<string, Notification>;
+  emailInboxes: Map<string, EmailInbox>;
+  emailMessages: Map<string, EmailMessage>;
   activityLog: ActivityLogEntry[];
 }
 
@@ -53,6 +57,8 @@ function createStore(): DatabaseSchema {
     payments: new Map(),
     documents: new Map(),
     notifications: new Map(),
+    emailInboxes: new Map(),
+    emailMessages: new Map(),
     activityLog: [],
   };
 }
@@ -63,7 +69,20 @@ declare global {
   var __royalos_db: DatabaseSchema | undefined;
 }
 
-export const db: DatabaseSchema = globalThis.__royalos_db ?? createStore();
+// Ensure the global store has all fields (backward-compatible with HMR)
+function ensureStoreComplete(store: DatabaseSchema): DatabaseSchema {
+  if (!store.emailInboxes) {
+    (store as any).emailInboxes = new Map();
+  }
+  if (!store.emailMessages) {
+    (store as any).emailMessages = new Map();
+  }
+  return store;
+}
+
+export const db: DatabaseSchema = ensureStoreComplete(
+  globalThis.__royalos_db ?? createStore()
+);
 
 // Persist across HMR in development
 if (process.env.NODE_ENV !== "production") {

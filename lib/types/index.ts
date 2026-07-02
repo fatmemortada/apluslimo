@@ -523,6 +523,145 @@ export interface Notification {
   createdAt: string;
 }
 
+// ── Email / Inbox Entities ───────────────────────────────────
+
+// ── Email / Inbox Types ─────────────────────────────────────
+
+export type InboxProvider = "gmail" | "outlook" | "smtp" | "mock";
+export type InboxSyncStatus = "connected" | "disconnected" | "error" | "connecting";
+
+export type EmailMessageStatus =
+  | "unread"
+  | "read"
+  | "replied"
+  | "forwarded"
+  | "converted_to_booking"
+  | "archived";
+
+export type EmailCategory =
+  | "booking_request"
+  | "quote_request"
+  | "cancellation"
+  | "booking_modification"
+  | "complaint"
+  | "general_inquiry"
+  | "corporate_request"
+  | "customer_question"
+  | "dispatch_request"
+  | "feedback"
+  | "other";
+
+export type EmailPriority = "low" | "normal" | "high" | "urgent";
+
+export interface OAuthToken {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: string;
+  scopes: string[];
+  tokenType?: string;
+  encrypted: boolean; // true in production
+}
+
+export interface EmailInbox {
+  id: string;
+  organizationId: string;
+  email: string;
+  companyName: string;
+  displayName: string;
+  provider: InboxProvider;
+  syncStatus: InboxSyncStatus;
+  enabled: boolean;
+  lastSyncAt?: string;
+  unreadCount: number;
+  totalEmails: number;
+
+  // OAuth fields
+  oauthConnected: boolean;
+  oauthProvider?: string;
+  oauthEmail?: string;
+  oauthToken?: OAuthToken;
+
+  // Company info
+  companyId?: string; // links to a company/org entity
+  phone?: string;
+  website?: string;
+  notes?: string;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmailAttachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  url: string;
+}
+
+export interface ParsedEmailData {
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  pickupLocation?: string;
+  dropoffLocation?: string;
+  pickupDate?: string;
+  pickupTime?: string;
+  passengerCount?: number;
+  flightNumber?: string;
+  vehicleType?: string;
+  specialRequests?: string;
+  confidence: number; // 0-1, how confident the parser is
+}
+
+export interface EmailMessage {
+  id: string;
+  organizationId: string;
+  inboxId: string; // which inbox received this
+  subject: string;
+  from: { name: string; email: string };
+  to: Array<{ name: string; email: string }>;
+  cc: Array<{ name: string; email: string }>;
+  replyTo?: string;
+  body: string;
+  bodyPreview: string;
+  status: EmailMessageStatus;
+  priority: EmailPriority;
+  category: EmailCategory;
+  aiClassification?: string; // future AI label
+  aiConfidence?: number; // future AI confidence score
+  labels: string[];
+  attachments: EmailAttachment[];
+  threadId: string;
+  convertedToBookingId?: string;
+
+  // Parsed data from email body
+  parsedData?: ParsedEmailData;
+
+  // CRM links
+  linkedCustomerId?: string;
+  linkedBookingId?: string;
+
+  receivedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Email Analytics ─────────────────────────────────────────
+
+export interface EmailInboxSummary {
+  inboxId: string;
+  companyName: string;
+  email: string;
+  total: number;
+  unread: number;
+  bookingRequests: number;
+  quoteRequests: number;
+  cancellations: number;
+  processed: number;
+  archived: number;
+}
+
 // ── Activity Log ────────────────────────────────────────────
 
 export interface ActivityLogEntry {

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, CheckCircle2, CalendarDays, Car, DollarSign, Users, AlertTriangle, Settings, Trash2, Shield, Wrench, FileText, Search, Filter, MessageSquare, Mail, Smartphone, Activity, Clock } from "lucide-react";
+import Link from "next/link";
+import { Bell, CheckCircle2, CalendarDays, Car, DollarSign, Users, AlertTriangle, Settings, Trash2, Shield, Wrench, FileText, Search, Filter, MessageSquare, Mail, Smartphone, Activity, Clock, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,10 +73,12 @@ export default function CommunicationCenter() {
       </div>}
 
       {tab === "email" && <Card padding="lg"><div className="text-center py-8">
-        <Mail className="mx-auto h-10 w-10 text-neutral-300" /><h3 className="text-base font-bold text-neutral-700 mt-3">Email Center</h3><p className="text-sm text-neutral-400 mt-1 max-w-md mx-auto">Email infrastructure ready for integration with SendGrid, Mailgun, or AWS SES. Templates prepared for booking confirmations, reminders, invoices, and corporate billing.</p>
-        <div className="flex flex-wrap justify-center gap-2 mt-4">
-          {["Booking Confirmation", "Trip Reminder", "Invoice", "Corporate Billing", "Driver Assignment"].map((t) => <Badge key={t} variant="neutral">{t}</Badge>)}
-        </div>
+        <Mail className="mx-auto h-10 w-10 text-neutral-300" /><h3 className="text-base font-bold text-neutral-700 mt-3">Email Center</h3><p className="text-sm text-neutral-400 mt-1 max-w-md mx-auto">Connected inboxes for A Plus Limo, Montreal Royal Limo, and Calgary Limo Services. View and manage all company emails in one place.</p>
+        <Link href="/email">
+          <Button variant="primary" size="lg" className="mt-4" icon={<ArrowRight className="h-4 w-4" />}>
+            Open Full Email Center
+          </Button>
+        </Link>
       </div></Card>}
 
       {tab === "sms" && <Card padding="lg"><div className="text-center py-8">

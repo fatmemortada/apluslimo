@@ -25,6 +25,7 @@ import {
   TrendingUp,
   PieChart,
   UserCheck,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 
@@ -82,6 +83,7 @@ const navigation: NavSection[] = [
     title: "Platform",
     items: [
       { label: "Documents", href: "/documents", icon: FileText },
+      { label: "Email Center", href: "/email", icon: Mail },
       { label: "Notifications", href: "/notifications", icon: Bell },
       { label: "Settings", href: "/settings", icon: Settings },
     ],

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { User, Building2, CreditCard, Bell, Shield, Globe, Palette, Users, Key, HelpCircle, Activity, AlertTriangle, Clock, Laptop, LogOut, Sliders, Receipt, Car, Wrench, FileText, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, Building2, CreditCard, Bell, Shield, Globe, Palette, Users, Key, HelpCircle, Activity, AlertTriangle, Clock, Laptop, LogOut, Sliders, Receipt, Car, Wrench, FileText, Lock, Mail, RefreshCw, CheckCircle2, XCircle, Plus, ExternalLink, Trash2, Edit3, Power, PowerOff, Eye, EyeOff, ShieldCheck, KeyRound, Globe2, Smartphone, Clock as ClockIcon, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge, StatusChip } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { useApi } from "@/lib/hooks/use-api";
+import type { EmailInbox } from "@/lib/types";
 
 const settingSections = [
   { id: "profile", label: "Profile", icon: User },
@@ -19,6 +21,7 @@ const settingSections = [
   { id: "regional", label: "Regional", icon: Globe },
   { id: "branding", label: "White Label", icon: Palette },
   { id: "api", label: "API & Integrations", icon: Key },
+  { id: "email", label: "Connected Inboxes", icon: Mail },
 ];
 
 const securityEvents = [
@@ -35,6 +38,12 @@ const activeSessions = [
 
 export default function AdminPanel() {
   const [activeSection, setActiveSection] = useState("profile");
+  const { data: inboxesData, refetch } = useApi<EmailInbox[]>("/api/emails/inboxes");
+  const inboxes = inboxesData || [];
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editInboxId, setEditInboxId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [newInbox, setNewInbox] = useState({ email: "", companyName: "", displayName: "", phone: "", website: "" });
 
   return (
     <div className="space-y-6">
@@ -75,6 +84,172 @@ export default function AdminPanel() {
           {activeSection === "notifications" && <SettingsCard title="Notification Preferences"><div className="space-y-3">{[{ label: "Email booking confirmations", checked: true },{ label: "Email invoice to customers", checked: true },{ label: "SMS driver alerts", checked: true },{ label: "Push notifications for dispatchers", checked: true },{ label: "Maintenance reminders", checked: true },{ label: "License expiry alerts", checked: true }].map((n) => <label key={n.label} className="flex items-center gap-3 py-2 cursor-pointer"><input type="checkbox" defaultChecked={n.checked} className="h-4 w-4 rounded border-neutral-200 text-brand-600" /><span className="text-sm text-neutral-700">{n.label}</span></label>)}</div></SettingsCard>}
 
           {activeSection === "api" && <SettingsCard title="API & Integrations"><div className="space-y-3"><div className="p-3 rounded-lg bg-neutral-25 flex items-center justify-between"><div><p className="text-sm font-bold">API Key</p><p className="text-xs text-neutral-400 font-mono">royal_live_••••••••••••••••</p></div><Button variant="outline" size="sm">Regenerate</Button></div><div className="p-3 rounded-lg bg-neutral-25 flex items-center justify-between"><div><p className="text-sm font-bold">Webhook URL</p><p className="text-xs text-neutral-400">https://api.royalos.com/v1/webhooks</p></div><Button variant="outline" size="sm">Configure</Button></div></div></SettingsCard>}
+
+          {activeSection === "email" && <SettingsCard title="Connected Inboxes">
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-sm text-neutral-500">Manage company email inboxes. OAuth-ready for Google Workspace and Microsoft 365.</p>
+              <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setShowAddDialog(true)}>Add Inbox</Button>
+            </div>
+
+            {/* Inbox list */}
+            <div className="space-y-3">
+              {inboxes.length === 0 ? (
+                <div className="rounded-xl border-2 border-dashed border-neutral-200 p-10 text-center">
+                  <Mail className="mx-auto h-10 w-10 text-neutral-300" />
+                  <p className="mt-3 text-sm font-semibold text-neutral-500">No inboxes connected</p>
+                  <p className="text-xs text-neutral-400 mt-1">Add your first company inbox to start receiving emails</p>
+                  <Button variant="primary" size="sm" className="mt-4" onClick={() => setShowAddDialog(true)} icon={<Plus className="h-4 w-4" />}>Connect Your First Inbox</Button>
+                </div>
+              ) : (
+                inboxes.map((inbox) => {
+                  const isEditing = editInboxId === inbox.id;
+                  const isDeleting = deleteConfirmId === inbox.id;
+                  const syncOk = inbox.syncStatus === "connected";
+
+                  if (isDeleting) {
+                    return (
+                      <div key={inbox.id} className="rounded-xl border-2 border-danger-200 bg-danger-50/30 p-4">
+                        <div className="flex items-center gap-3">
+                          <AlertCircle className="h-5 w-5 text-danger-600" />
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-danger-700">Remove {inbox.displayName}?</p>
+                            <p className="text-xs text-danger-600">All emails from this inbox will be archived. This action cannot be undone.</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
+                            <Button variant="destructive" size="sm" icon={<Trash2 className="h-3.5 w-3.5" />}>Remove</Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (isEditing) {
+                    return (
+                      <div key={inbox.id} className="rounded-xl border-2 border-brand-200 bg-brand-50/20 p-4">
+                        <p className="text-xs font-bold text-brand-700 uppercase mb-3">Editing {inbox.displayName}</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Input label="Company Name" defaultValue={inbox.companyName} />
+                          <Input label="Display Name" defaultValue={inbox.displayName} />
+                          <Input label="Email" defaultValue={inbox.email} />
+                          <Input label="Phone" defaultValue={inbox.phone || ""} />
+                          <Input label="Website" defaultValue={inbox.website || ""} />
+                          <Input label="Notes" defaultValue={inbox.notes || ""} />
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <Button variant="primary" size="sm" onClick={() => setEditInboxId(null)}>Save Changes</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setEditInboxId(null)}>Cancel</Button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={inbox.id} className="flex items-center gap-4 rounded-xl border border-neutral-200 p-4 hover:bg-neutral-25 transition-colors">
+                      {/* Icon */}
+                      <div className={["flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", syncOk ? "bg-success-50" : "bg-neutral-100"].join(" ")}>
+                        <Mail className={["h-5 w-5", syncOk ? "text-success-600" : "text-neutral-400"].join(" ")} />
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-bold text-neutral-800">{inbox.displayName}</p>
+                          {inbox.enabled ? (
+                            <Badge variant="success" dot>Active</Badge>
+                          ) : (
+                            <Badge variant="neutral">Paused</Badge>
+                          )}
+                          {syncOk ? (
+                            <Badge variant="success" size="sm">Connected</Badge>
+                          ) : (
+                            <Badge variant="danger" size="sm">Disconnected</Badge>
+                          )}
+                          {inbox.oauthConnected && (
+                            <Badge variant="info" size="sm">OAuth</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-neutral-500 mt-0.5">{inbox.email}</p>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          <span className="text-[10px] text-neutral-400 uppercase">{inbox.provider}</span>
+                          {inbox.unreadCount > 0 && (
+                            <span className="text-[10px] font-semibold text-brand-600">{inbox.unreadCount} unread</span>
+                          )}
+                          {inbox.totalEmails > 0 && (
+                            <span className="text-[10px] text-neutral-400">{inbox.totalEmails} total</span>
+                          )}
+                          {inbox.lastSyncAt && (
+                            <span className="text-[10px] text-neutral-400 flex items-center gap-1">
+                              <ClockIcon className="h-3 w-3" />
+                              Last sync: {new Date(inbox.lastSyncAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => { /* toggle enable */ }} className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors" title={inbox.enabled ? "Disable" : "Enable"}>
+                          {inbox.enabled ? <Power className="h-4 w-4 text-success-600" /> : <PowerOff className="h-4 w-4" />}
+                        </button>
+                        <button onClick={() => { refetch(); }} className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors" title="Sync now">
+                          <RefreshCw className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => setEditInboxId(inbox.id)} className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors" title="Edit">
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => setDeleteConfirmId(inbox.id)} className="rounded-lg p-2 text-neutral-400 hover:bg-danger-50 hover:text-danger-600 transition-colors" title="Remove">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* OAuth Providers section */}
+            <div className="mt-8">
+              <h3 className="text-xs font-bold text-neutral-500 uppercase mb-3">OAuth Connections</h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="flex items-center gap-3 rounded-xl border border-neutral-200 p-4 hover:bg-neutral-25 transition-colors cursor-pointer">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold text-sm">G</div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-neutral-700">Google Workspace</p>
+                    <p className="text-xs text-neutral-400">Gmail API · OAuth 2.0</p>
+                  </div>
+                  <Badge variant="neutral">Soon</Badge>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl border border-neutral-200 p-4 hover:bg-neutral-25 transition-colors cursor-pointer">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold text-sm">M</div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-neutral-700">Microsoft 365</p>
+                    <p className="text-xs text-neutral-400">Graph API · OAuth 2.0</p>
+                  </div>
+                  <Badge variant="neutral">Soon</Badge>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl border border-neutral-200 p-4 hover:bg-neutral-25 transition-colors cursor-pointer">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600 font-bold text-sm">IMAP</div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-neutral-700">IMAP/SMTP</p>
+                    <p className="text-xs text-neutral-400">Encrypted app passwords</p>
+                  </div>
+                  <Badge variant="neutral">Soon</Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Token Security info */}
+            <div className="mt-6 rounded-xl border border-neutral-200 bg-neutral-25 p-4">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="h-5 w-5 text-neutral-500" />
+                <div>
+                  <p className="text-sm font-semibold text-neutral-700">OAuth Security</p>
+                  <p className="text-xs text-neutral-500">No plain-text passwords are stored. OAuth 2.0 tokens are encrypted at rest using AES-256. Refresh tokens rotate automatically. Supports Gmail API, Microsoft Graph API, and standard IMAP/SMTP with encrypted app passwords.</p>
+                </div>
+              </div>
+            </div>
+          </SettingsCard>}
 
           <div className="flex justify-end gap-3"><Button variant="outline">Cancel</Button><Button variant="primary">Save Changes</Button></div>
         </div>

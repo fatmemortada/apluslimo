@@ -4,6 +4,7 @@
 // ============================================================
 
 import { db, generateId, generateBookingNumber, generateInvoiceNumber } from "./store";
+import { parseEmail, classifyEmail, classifyPriority } from "@/lib/email/parser";
 import type {
   Organization,
   User,
@@ -17,6 +18,8 @@ import type {
   Payment,
   Notification,
   ActivityLogEntry,
+  EmailInbox,
+  EmailMessage,
 } from "@/lib/types";
 
 const ORG_ID = "org_demo001";
@@ -497,4 +500,249 @@ export function seed(): void {
     { id: "act_010", organizationId: ORG_ID, userId: "user_fatme", action: "user_login", entityType: "user", entityId: "user_fatme", details: {}, createdAt: "2026-07-02T07:00:00Z" },
   ];
   db.activityLog.push(...activityLog);
+
+  // ── Email Inboxes ────────────────────────────────────────
+  const inboxes: EmailInbox[] = [
+    {
+      id: "inbox_aplus", organizationId: ORG_ID,
+      email: "info@apluslimo.ca", companyName: "A Plus Limo",
+      displayName: "A Plus Limo", provider: "mock",
+      syncStatus: "connected", enabled: true, lastSyncAt: NOW,
+      unreadCount: 3, totalEmails: 8,
+      oauthConnected: false,
+      createdAt: "2026-01-01T00:00:00Z", updatedAt: NOW,
+    },
+    {
+      id: "inbox_mtlroyal", organizationId: ORG_ID,
+      email: "info@montrealroyallimo.ca", companyName: "Montreal Royal Limo",
+      displayName: "Montreal Royal Limo", provider: "mock",
+      syncStatus: "connected", enabled: true, lastSyncAt: NOW,
+      unreadCount: 5, totalEmails: 14,
+      oauthConnected: false,
+      createdAt: "2026-01-01T00:00:00Z", updatedAt: NOW,
+    },
+    {
+      id: "inbox_calgary", organizationId: ORG_ID,
+      email: "info@calgarylimoservices.ca", companyName: "Calgary Limo Services",
+      displayName: "Calgary Limo Services", provider: "mock",
+      syncStatus: "connected", enabled: true, lastSyncAt: NOW,
+      unreadCount: 2, totalEmails: 6,
+      oauthConnected: false,
+      createdAt: "2026-03-15T00:00:00Z", updatedAt: NOW,
+    },
+  ];
+  inboxes.forEach((inv) => db.emailInboxes.set(inv.id, inv));
+
+  // ── Email Messages ────────────────────────────────────────
+  const emails: Array<Omit<EmailMessage, "priority" | "category">> = [
+    // ── A Plus Limo inbox ──
+    {
+      id: "email_aplus_001", organizationId: ORG_ID, inboxId: "inbox_aplus",
+      subject: "Airport Transfer Request — July 15",
+      from: { name: "James Wilson", email: "jwilson@corp.com" },
+      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
+      cc: [], replyTo: "jwilson@corp.com",
+      body: "Hi team,\n\nI need a luxury SUV transfer from YUL airport to downtown Montreal on July 15. Flight arrives at 14:30. 2 passengers, 3 suitcases.\n\nPlease send a quote.\n\nBest,\nJames Wilson",
+      bodyPreview: "I need a luxury SUV transfer from YUL airport to downtown Montreal on July 15...",
+      status: "unread", labels: ["booking_request", "airport"],
+      attachments: [], threadId: "thread_aplus_001",
+      receivedAt: "2026-07-02T08:15:00Z", createdAt: "2026-07-02T08:15:00Z", updatedAt: "2026-07-02T08:15:00Z",
+    },
+    {
+      id: "email_aplus_002", organizationId: ORG_ID, inboxId: "inbox_aplus",
+      subject: "Re: Weekly Corporate Account Summary",
+      from: { name: "Sarah Chen", email: "sarah.chen@techcorp.com" },
+      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
+      cc: ["accounts@techcorp.com"].map(e => ({ name: "Accounts", email: e })),
+      replyTo: "sarah.chen@techcorp.com",
+      body: "Hi there,\n\nCould you please send me the trip summary for last month? We need it for our expense reconciliation.\n\nThanks,\nSarah",
+      bodyPreview: "Could you please send me the trip summary for last month? We need it for our expense reconciliation.",
+      status: "read", labels: ["corporate", "invoice"],
+      attachments: [], threadId: "thread_aplus_002",
+      receivedAt: "2026-07-01T11:30:00Z", createdAt: "2026-07-01T11:30:00Z", updatedAt: "2026-07-02T08:00:00Z",
+    },
+    {
+      id: "email_aplus_003", organizationId: ORG_ID, inboxId: "inbox_aplus",
+      subject: "VIP Client — Wedding Event on Aug 20",
+      from: { name: "Emily Watson", email: "emily.watson@email.com" },
+      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
+      cc: [], replyTo: "emily.watson@email.com",
+      body: "Hello,\n\nWe are looking to book a stretch limo for our wedding on August 20. Pickup from church at 16:00, reception venue after. Approximately 8 passengers.\n\nPlease advise availability and pricing.\n\nBest regards,\nEmily Watson",
+      bodyPreview: "We are looking to book a stretch limo for our wedding on August 20...",
+      status: "unread", labels: ["wedding", "quote_request"],
+      attachments: [], threadId: "thread_aplus_003",
+      receivedAt: "2026-07-02T09:45:00Z", createdAt: "2026-07-02T09:45:00Z", updatedAt: "2026-07-02T09:45:00Z",
+    },
+    {
+      id: "email_aplus_004", organizationId: ORG_ID, inboxId: "inbox_aplus",
+      subject: "Invoice INV-2026-0842 Paid",
+      from: { name: "Michael Lee", email: "michael.lee@email.com" },
+      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
+      cc: [], replyTo: "michael.lee@email.com",
+      body: "Hi,\n\nJust confirming that invoice INV-2026-0842 has been paid via bank transfer. Receipt attached.\n\nRegards,\nMichael Lee",
+      bodyPreview: "Just confirming that invoice INV-2026-0842 has been paid via bank transfer.",
+      status: "read", labels: ["invoice", "payment"],
+      attachments: [{ id: "att_aplus_001", filename: "payment_receipt.pdf", mimeType: "application/pdf", size: 245000, url: "#" }],
+      threadId: "thread_aplus_004",
+      receivedAt: "2026-06-30T15:20:00Z", createdAt: "2026-06-30T15:20:00Z", updatedAt: "2026-07-01T10:00:00Z",
+    },
+
+    // ── Montreal Royal Limo inbox ──
+    {
+      id: "email_mtl_001", organizationId: ORG_ID, inboxId: "inbox_mtlroyal",
+      subject: "YUL Airport Pickup — July 3, 06:30",
+      from: { name: "Robert Chen", email: "robert.chen@email.com" },
+      to: [{ name: "Montreal Royal Limo", email: "info@montrealroyallimo.ca" }],
+      cc: ["assistant@techcorp.com"].map(e => ({ name: "Executive Assistant", email: e })),
+      replyTo: "robert.chen@email.com",
+      body: "Good morning,\n\nI have an early flight on July 3 and need a sedan pickup at 06:30 from Westmount to YUL. One passenger, one carry-on.\n\nCan you confirm availability?\n\nThanks,\nRobert Chen",
+      bodyPreview: "I have an early flight on July 3 and need a sedan pickup at 06:30 from Westmount to YUL.",
+      status: "unread", labels: ["booking_request", "airport"],
+      attachments: [], threadId: "thread_mtl_001",
+      receivedAt: "2026-07-02T07:00:00Z", createdAt: "2026-07-02T07:00:00Z", updatedAt: "2026-07-02T07:00:00Z",
+    },
+    {
+      id: "email_mtl_002", organizationId: ORG_ID, inboxId: "inbox_mtlroyal",
+      subject: "Corporate Account — Monthly Statement Request",
+      from: { name: "David Miller", email: "david.miller@email.com" },
+      to: [{ name: "Montreal Royal Limo", email: "info@montrealroyallimo.ca" }],
+      cc: [], replyTo: "david.miller@email.com",
+      body: "Hello,\n\nPlease provide the monthly statement for June 2026 for our corporate account (Morgan Stanley). We need it for end-of-quarter.\n\nBest,\nDavid Miller",
+      bodyPreview: "Please provide the monthly statement for June 2026 for our corporate account.",
+      status: "unread", labels: ["corporate", "invoice"],
+      attachments: [], threadId: "thread_mtl_002",
+      receivedAt: "2026-07-01T14:22:00Z", createdAt: "2026-07-01T14:22:00Z", updatedAt: "2026-07-01T14:22:00Z",
+    },
+    {
+      id: "email_mtl_003", organizationId: ORG_ID, inboxId: "inbox_mtlroyal",
+      subject: "Re: Booking #MRL-1043 — Confirmation Details",
+      from: { name: "Sarah Brown", email: "sarah.brown@email.com" },
+      to: [{ name: "Montreal Royal Limo", email: "info@montrealroyallimo.ca" }],
+      cc: [], replyTo: "sarah.brown@email.com",
+      body: "Thank you for the confirmation! Looking forward to the trip to Mont Tremblant.\n\nCould you please ensure the vehicle has winter tires fitted?\n\nBest,\nSarah",
+      bodyPreview: "Thank you for the confirmation! Could you ensure winter tires are fitted?",
+      status: "read", labels: ["booking", "confirmed"],
+      attachments: [], threadId: "thread_mtl_003",
+      receivedAt: "2026-07-01T16:45:00Z", createdAt: "2026-07-01T16:45:00Z", updatedAt: "2026-07-02T09:00:00Z",
+    },
+    {
+      id: "email_mtl_004", organizationId: ORG_ID, inboxId: "inbox_mtlroyal",
+      subject: "New Booking Request — Montreal to Quebec City",
+      from: { name: "Lisa Park", email: "lisa.park@email.com" },
+      to: [{ name: "Montreal Royal Limo", email: "info@montrealroyallimo.ca" }],
+      cc: [], replyTo: "lisa.park@email.com",
+      body: "Hi,\n\nI'd like to book a trip from Montreal to Quebec City on July 10. Departure around 09:00 from Brossard. 2 passengers, 2 suitcases.\n\nPlease send a quote for a luxury sedan.\n\nThanks,\nLisa Park",
+      bodyPreview: "I'd like to book a trip from Montreal to Quebec City on July 10.",
+      status: "unread", labels: ["quote_request", "point_to_point"],
+      attachments: [], threadId: "thread_mtl_004",
+      receivedAt: "2026-07-02T10:10:00Z", createdAt: "2026-07-02T10:10:00Z", updatedAt: "2026-07-02T10:10:00Z",
+    },
+    {
+      id: "email_mtl_005", organizationId: ORG_ID, inboxId: "inbox_mtlroyal",
+      subject: "Thank You — Excellent Service",
+      from: { name: "John Smith", email: "john.smith@email.com" },
+      to: [{ name: "Montreal Royal Limo", email: "info@montrealroyallimo.ca" }],
+      cc: [], replyTo: "john.smith@email.com",
+      body: "Just wanted to say thank you for the excellent service this morning. David was punctual and the vehicle was immaculate.\n\nWill definitely book again!\n\nBest,\nJohn Smith",
+      bodyPreview: "Thank you for the excellent service this morning. David was punctual...",
+      status: "read", labels: ["feedback", "compliment"],
+      attachments: [], threadId: "thread_mtl_005",
+      receivedAt: "2026-07-02T10:30:00Z", createdAt: "2026-07-02T10:30:00Z", updatedAt: "2026-07-02T10:30:00Z",
+    },
+
+    // ── Calgary Limo Services inbox ──
+    {
+      id: "email_yyc_001", organizationId: ORG_ID, inboxId: "inbox_calgary",
+      subject: "Calgary Airport to Banff — Group Transfer July 18",
+      from: { name: "Tom Harrison", email: "tom.h@energycorp.ca" },
+      to: [{ name: "Calgary Limo Services", email: "info@calgarylimoservices.ca" }],
+      cc: [], replyTo: "tom.h@energycorp.ca",
+      body: "Hello,\n\nWe have a group of 6 arriving at YYC on July 18 at 11:00. Need transfer to Banff Springs Hotel. 6 passengers, 8 luggage pieces.\n\nPlease quote for SUV or van.\n\nThanks,\nTom Harrison",
+      bodyPreview: "We have a group of 6 arriving at YYC on July 18. Need transfer to Banff Springs Hotel.",
+      status: "unread", labels: ["booking_request", "group"],
+      attachments: [], threadId: "thread_yyc_001",
+      receivedAt: "2026-07-02T11:00:00Z", createdAt: "2026-07-02T11:00:00Z", updatedAt: "2026-07-02T11:00:00Z",
+    },
+    {
+      id: "email_yyc_002", organizationId: ORG_ID, inboxId: "inbox_calgary",
+      subject: "Invoice Inquiry — INV-2026-0912",
+      from: { name: "Patricia Wong", email: "pwong@accounting.ca" },
+      to: [{ name: "Calgary Limo", email: "info@calgarylimoservices.ca" }],
+      cc: [], replyTo: "pwong@accounting.ca",
+      body: "Hi,\n\nI'm following up on invoice INV-2026-0912 for $520.00. It seems there's a discrepancy in the billing amount vs. the quoted price.\n\nCould you please review and get back to me?\n\nRegards,\nPatricia Wong",
+      bodyPreview: "Following up on invoice INV-2026-0912 — discrepancy in billing amount vs quoted price.",
+      status: "read", labels: ["invoice", "billing"],
+      attachments: [], threadId: "thread_yyc_002",
+      receivedAt: "2026-07-01T09:15:00Z", createdAt: "2026-07-01T09:15:00Z", updatedAt: "2026-07-02T08:30:00Z",
+    },
+    {
+      id: "email_yyc_003", organizationId: ORG_ID, inboxId: "inbox_calgary",
+      subject: "Booking Confirmed — Stampede Week Transport",
+      from: { name: "Mike Dawson", email: "mike.d@stampede.ca" },
+      to: [{ name: "Calgary Limo", email: "info@calgarylimoservices.ca" }],
+      cc: ["events@stampede.ca"].map(e => ({ name: "Events Team", email: e })),
+      replyTo: "mike.d@stampede.ca",
+      body: "Hi team,\n\nWe've confirmed the booking for Stampede Week (July 5-12). We need 2 SUVs on standby each evening from 18:00 to 02:00.\n\nVIP transport for our guests. Please confirm driver assignments.\n\nThanks,\nMike",
+      bodyPreview: "Confirmed booking for Stampede Week — 2 SUVs on standby each evening.",
+      status: "unread", labels: ["booking", "corporate", "event"],
+      attachments: [
+        { id: "att_yyc_001", filename: "stampede_schedule.pdf", mimeType: "application/pdf", size: 520000, url: "#" },
+        { id: "att_yyc_002", filename: "vip_guest_list.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", size: 180000, url: "#" },
+      ],
+      threadId: "thread_yyc_003",
+      receivedAt: "2026-07-01T18:30:00Z", createdAt: "2026-07-01T18:30:00Z", updatedAt: "2026-07-01T18:30:00Z",
+    },
+
+    // ── Cancellation ──
+    {
+      id: "email_aplus_005", organizationId: ORG_ID, inboxId: "inbox_aplus",
+      subject: "Booking Cancellation — MRL-1045",
+      from: { name: "David Miller", email: "david.miller@email.com" },
+      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
+      cc: [], replyTo: "david.miller@email.com",
+      body: "Hi,\n\nI need to cancel my booking for July 2 (MRL-1045). Sorry for the late notice — our plans have changed.\n\nPlease confirm the cancellation and any fees.\n\nBest,\nDavid Miller",
+      bodyPreview: "I need to cancel my booking MRL-1045 for July 2. Plans have changed.",
+      status: "unread", labels: ["cancellation", "booking"],
+      attachments: [], threadId: "thread_aplus_005",
+      receivedAt: "2026-07-02T12:15:00Z", createdAt: "2026-07-02T12:15:00Z", updatedAt: "2026-07-02T12:15:00Z",
+    },
+
+    // ── Complaint ──
+    {
+      id: "email_mtl_006", organizationId: ORG_ID, inboxId: "inbox_mtlroyal",
+      subject: "Unacceptable Service — Driver Late 30 Minutes",
+      from: { name: "Michael Lee", email: "michael.lee@email.com" },
+      to: [{ name: "Montreal Royal Limo", email: "info@montrealroyallimo.ca" }],
+      cc: [], replyTo: "michael.lee@email.com",
+      body: "To whom it may concern,\n\nI booked a sedan for this morning at 08:00 and the driver arrived at 08:35 without any notification. I missed my appointment.\n\nI expect a full refund and an explanation. This is unacceptable for a premium service.\n\nRegards,\nMichael Lee",
+      bodyPreview: "Driver arrived 35 minutes late without notification. I missed my appointment.",
+      status: "unread", labels: ["complaint", "urgent"],
+      attachments: [], threadId: "thread_mtl_006",
+      receivedAt: "2026-07-02T09:00:00Z", createdAt: "2026-07-02T09:00:00Z", updatedAt: "2026-07-02T09:00:00Z",
+    },
+
+    // ── General Inquiry ──
+    {
+      id: "email_aplus_006", organizationId: ORG_ID, inboxId: "inbox_aplus",
+      subject: "Question About Airport Services",
+      from: { name: "Jennifer Adams", email: "jennifer.adams@email.com" },
+      to: [{ name: "A Plus Limo", email: "info@apluslimo.ca" }],
+      cc: [], replyTo: "jennifer.adams@email.com",
+      body: "Hello,\n\nI'm visiting Montreal next month and was wondering what types of vehicles you offer for airport transfers. Do you have options for child seats?\n\nAlso, what is your cancellation policy?\n\nThanks,\nJennifer Adams",
+      bodyPreview: "What vehicle types for airport transfers? Do you have child seats?",
+      status: "unread", labels: ["inquiry", "general"],
+      attachments: [], threadId: "thread_aplus_006",
+      receivedAt: "2026-07-02T14:30:00Z", createdAt: "2026-07-02T14:30:00Z", updatedAt: "2026-07-02T14:30:00Z",
+    },
+  ];
+  // Auto-compute category, priority, and parsed data for all emails
+  emails.forEach((partial) => {
+    const email: EmailMessage = {
+      ...partial,
+      priority: classifyPriority(partial.subject, partial.body, partial.labels),
+      category: classifyEmail(partial.subject, partial.body, partial.labels),
+      parsedData: parseEmail(partial.subject, partial.body, partial.from.name, partial.from.email),
+    };
+    db.emailMessages.set(email.id, email);
+  });
 }
