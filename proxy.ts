@@ -16,7 +16,7 @@ const publicRoutes = [
 // API routes that are public
 const publicApiPrefixes = ["/api/auth/"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes
